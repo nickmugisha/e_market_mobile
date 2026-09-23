@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "242684629465",
+    "project_id": "e-market-ca238",
+    "storage_bucket": "e-market-ca238.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:242684629465:android:2d7c048105fa6e3d4e49c8",
+        "android_client_info": {
+          "package_name": "com.example.e_market"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCB-RwAd951voaGg3KyLpBEurs0j0XtLVs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

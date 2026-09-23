@@ -1,0 +1,410 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function userExists(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function isClient() {
+      return signedIn()
+        && userExists(request.auth.uid)
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'client';
+    }
+
+    function isSeller() {
+      return signedIn()
+        && userExists(request.auth.uid)
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'seller';
+    }
+
+    function isSellerUid(uid) {
+      return uid is string
+        && userExists(uid)
+        && get(/databases/$(database)/documents/users/$(uid)).data.role == 'seller';
+    }
+
+    function validCurrency(value) {
+      return value in ['BIF', 'USD', 'EUR'];
+    }
+
+    function validUserProfile(data, uid) {
+      return data.keys().hasOnly([
+          'uid',
+          'name',
+          'email',
+          'phone',
+          'role',
+          'whatsappNumber',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'uid',
+          'name',
+          'email',
+          'phone',
+          'role',
+          'whatsappNumber',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.uid == uid
+        && data.email == request.auth.token.email
+        && data.role in ['client', 'seller']
+        && data.name is string
+        && data.name.size() > 0
+        && data.phone is string
+        && data.whatsappNumber is string
+        && (data.role == 'seller' || data.whatsappNumber == '');
+    }
+
+    function validCategory(data) {
+      return data.keys().hasOnly([
+          'name',
+          'description',
+          'active',
+          'createdBy',
+          'createdAt'
+        ])
+        && data.keys().hasAll([
+          'name',
+          'description',
+          'active',
+          'createdBy',
+          'createdAt'
+        ])
+        && data.name is string
+        && data.name.size() > 0
+        && data.description is string
+        && data.active is bool
+        && data.createdBy is string;
+    }
+
+    function categoryIsActive(categoryId) {
+      return categoryId is string
+        && exists(/databases/$(database)/documents/categories/$(categoryId))
+        && get(/databases/$(database)/documents/categories/$(categoryId)).data.active == true;
+    }
+
+    function validProduct(data) {
+      return data.keys().hasOnly([
+          'sellerId',
+          'name',
+          'description',
+          'categoryId',
+          'categoryName',
+          'price',
+          'currency',
+          'stock',
+          'imageRef',
+          'active',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'sellerId',
+          'name',
+          'description',
+          'categoryId',
+          'categoryName',
+          'price',
+          'currency',
+          'stock',
+          'imageRef',
+          'active',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.sellerId is string
+        && data.name is string
+        && data.name.size() > 0
+        && data.description is string
+        && data.categoryId is string
+        && data.categoryName is string
+        && data.price is number
+        && data.price >= 0
+        && validCurrency(data.currency)
+        && data.stock is int
+        && data.stock >= 0
+        && data.imageRef is string
+        && data.active is bool
+        && categoryIsActive(data.categoryId);
+    }
+
+    function productExists(productId) {
+      return exists(/databases/$(database)/documents/products/$(productId));
+    }
+
+    function validCartItem(productId, data) {
+      return data.keys().hasOnly([
+          'productId',
+          'sellerId',
+          'productName',
+          'imageRef',
+          'quantity',
+          'unitPrice',
+          'currency',
+          'addedAt',
+          'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'productId',
+          'sellerId',
+          'productName',
+          'imageRef',
+          'quantity',
+          'unitPrice',
+          'currency',
+          'addedAt',
+          'updatedAt'
+        ])
+        && data.productId == productId
+        && data.sellerId is string
+        && data.productName is string
+        && data.imageRef is string
+        && data.quantity is int
+        && data.quantity > 0
+        && data.quantity <= 99
+        && data.unitPrice is number
+        && data.unitPrice >= 0
+        && validCurrency(data.currency)
+        && productExists(productId)
+        && get(/databases/$(database)/documents/products/$(productId)).data.active == true
+        && get(/databases/$(database)/documents/products/$(productId)).data.sellerId == data.sellerId
+        && get(/databases/$(database)/documents/products/$(productId)).data.name == data.productName
+        && get(/databases/$(database)/documents/products/$(productId)).data.imageRef == data.imageRef
+        && get(/databases/$(database)/documents/products/$(productId)).data.price == data.unitPrice
+        && get(/databases/$(database)/documents/products/$(productId)).data.currency == data.currency;
+    }
+
+    function validOrder(data) {
+      return data.keys().hasOnly([
+          'clientId',
+          'sellerId',
+          'clientName',
+          'clientPhone',
+          'status',
+          'fulfillmentType',
+          'paymentMethod',
+          'paymentStatus',
+          'currency',
+          'total',
+          'deliveryAddress',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'clientId',
+          'sellerId',
+          'clientName',
+          'clientPhone',
+          'status',
+          'fulfillmentType',
+          'paymentMethod',
+          'paymentStatus',
+          'currency',
+          'total',
+          'deliveryAddress',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.clientId is string
+        && data.sellerId is string
+        && data.clientName is string
+        && data.clientName.size() > 0
+        && data.clientPhone is string
+        && data.status in ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled']
+        && data.fulfillmentType in ['delivery', 'pickup']
+        && data.paymentMethod in ['cash', 'mobile_money', 'card']
+        && data.paymentStatus in ['pending', 'paid', 'failed']
+        && validCurrency(data.currency)
+        && data.total is number
+        && data.total >= 0
+        && data.deliveryAddress is string
+        && (data.fulfillmentType == 'pickup' || data.deliveryAddress.size() > 0);
+    }
+
+    function canReadOrderData(data) {
+      return signedIn()
+        && (
+          (isClient() && data.clientId == request.auth.uid)
+          || (isSeller() && data.sellerId == request.auth.uid)
+        );
+    }
+
+    function validStatusTransition(before, after) {
+      return before == after
+        || (before == 'pending' && after in ['confirmed', 'cancelled'])
+        || (before == 'confirmed' && after in ['preparing', 'cancelled'])
+        || (before == 'preparing' && after in ['ready', 'cancelled'])
+        || (before == 'ready' && after in ['completed', 'cancelled']);
+    }
+
+    function validOrderItem(orderId, data) {
+      return data.keys().hasOnly([
+          'productId',
+          'sellerId',
+          'productName',
+          'imageRef',
+          'quantity',
+          'unitPrice',
+          'subtotal',
+          'currency'
+        ])
+        && data.keys().hasAll([
+          'productId',
+          'sellerId',
+          'productName',
+          'imageRef',
+          'quantity',
+          'unitPrice',
+          'subtotal',
+          'currency'
+        ])
+        && data.productId is string
+        && data.sellerId is string
+        && data.productName is string
+        && data.imageRef is string
+        && data.quantity is int
+        && data.quantity > 0
+        && data.unitPrice is number
+        && data.unitPrice >= 0
+        && data.subtotal is number
+        && data.subtotal >= 0
+        && validCurrency(data.currency)
+        && productExists(data.productId)
+        && getAfter(/databases/$(database)/documents/orders/$(orderId)).data.sellerId == data.sellerId
+        && getAfter(/databases/$(database)/documents/orders/$(orderId)).data.currency == data.currency;
+    }
+
+    match /users/{uid} {
+      allow create: if isOwner(uid)
+        && validUserProfile(request.resource.data, uid)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow read: if isOwner(uid);
+
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name',
+          'phone',
+          'whatsappNumber',
+          'updatedAt'
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.phone is string
+        && request.resource.data.whatsappNumber is string
+        && (resource.data.role == 'seller' || request.resource.data.whatsappNumber == '')
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if false;
+    }
+
+    match /categories/{categoryId} {
+      allow read: if resource.data.active == true || isSeller();
+
+      allow create: if isSeller()
+        && validCategory(request.resource.data)
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.active == true
+        && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if false;
+    }
+
+    match /products/{productId} {
+      allow read: if resource.data.active == true
+        || (isSeller() && resource.data.sellerId == request.auth.uid);
+
+      allow create: if isSeller()
+        && validProduct(request.resource.data)
+        && request.resource.data.sellerId == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if isSeller()
+        && resource.data.sellerId == request.auth.uid
+        && request.resource.data.sellerId == resource.data.sellerId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && validProduct(request.resource.data)
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if isSeller()
+        && resource.data.sellerId == request.auth.uid;
+    }
+
+    match /carts/{clientUid} {
+      allow read, write: if false;
+
+      match /items/{productId} {
+        allow read: if isClient() && request.auth.uid == clientUid;
+
+        allow create: if isClient()
+          && request.auth.uid == clientUid
+          && validCartItem(productId, request.resource.data)
+          && request.resource.data.addedAt == request.time
+          && request.resource.data.updatedAt == request.time;
+
+        allow update: if isClient()
+          && request.auth.uid == clientUid
+          && validCartItem(productId, request.resource.data)
+          && request.resource.data.addedAt == resource.data.addedAt
+          && request.resource.data.updatedAt == request.time;
+
+        allow delete: if isClient() && request.auth.uid == clientUid;
+      }
+    }
+
+    match /orders/{orderId} {
+      allow create: if isClient()
+        && validOrder(request.resource.data)
+        && request.resource.data.clientId == request.auth.uid
+        && isSellerUid(request.resource.data.sellerId)
+        && request.resource.data.status == 'pending'
+        && request.resource.data.paymentStatus in ['pending', 'paid']
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow read: if canReadOrderData(resource.data);
+
+      allow update: if isSeller()
+        && resource.data.sellerId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'updatedAt'
+        ])
+        && validStatusTransition(resource.data.status, request.resource.data.status)
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if false;
+
+      match /items/{itemId} {
+        allow read: if canReadOrderData(
+          get(/databases/$(database)/documents/orders/$(orderId)).data
+        );
+
+        allow create: if isClient()
+          && getAfter(/databases/$(database)/documents/orders/$(orderId)).data.clientId == request.auth.uid
+          && getAfter(/databases/$(database)/documents/orders/$(orderId)).data.status == 'pending'
+          && validOrderItem(orderId, request.resource.data);
+
+        allow update, delete: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

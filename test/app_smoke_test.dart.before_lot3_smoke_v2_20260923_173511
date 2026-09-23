@@ -1,0 +1,17 @@
+import 'package:e_market/app/e_market_app.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  testWidgets('e-market starts on splash', (tester) async {
+    await tester.pumpWidget(const EMarketApp());
+
+    expect(find.text('e-market'), findsOneWidget);
+    expect(find.text('Shop smarter. Move smoother.'), findsOneWidget);
+
+    // Dispose the splash explicitly so its navigation/animation timers are
+    // cancelled before flutter_test verifies that no timers are left pending.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+}
