@@ -136,8 +136,10 @@ service cloud.firestore {
         && data.stock is int
         && data.stock >= 0
         && data.imageRef is string
+        && data.imageRef.size() <= 700000
         && data.active is bool
-        && categoryIsActive(data.categoryId);
+        && categoryIsActive(data.categoryId)
+        && get(/databases/$(database)/documents/categories/$(data.categoryId)).data.name == data.categoryName;
     }
 
     function productExists(productId) {

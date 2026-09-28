@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/data/auth_service.dart';
 import '../../auth/domain/user_profile.dart';
 import '../../auth/presentation/auth_page.dart';
+import '../../seller/presentation/seller_dashboard_page.dart';
 import 'widgets/featured_card.dart';
 
 class HomePage extends StatefulWidget {
@@ -129,6 +130,18 @@ class _HomePageState extends State<HomePage> {
                     icon: Icons.chat_outlined,
                     label: profile.whatsappNumber,
                   ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _openSellerDashboard();
+                      },
+                      icon: const Icon(Icons.storefront_rounded),
+                      label: const Text('Open seller dashboard'),
+                    ),
+                  ),
                 ],
                 const SizedBox(height: 22),
                 SizedBox(
@@ -150,7 +163,21 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> _openSellerDashboard() async {
+    final profile = widget.profile;
+    if (profile == null || profile.role != UserRole.seller) return;
+
+    await Navigator.of(context).push(
+      smoothRoute(SellerDashboardPage(profile: profile)),
+    );
+  }
+
   void _onNavigationSelected(int index) {
+    if (index == 1 &&
+        widget.profile?.role == UserRole.seller) {
+      _openSellerDashboard();
+      return;
+    }
     if (index == 2) {
       _protectedAction('Saved products arrive in a later LOT.');
       return;
@@ -348,9 +375,11 @@ class _HomePageState extends State<HomePage> {
                           color: AppColors.canvas,
                           borderRadius: BorderRadius.circular(24),
                         ),
-                        child: const Text(
-                          'Firestore products arrive in LOT 5. LOT 2 now provides real Firebase authentication and persistent user roles.',
-                          style: TextStyle(
+                        child: Text(
+                          widget.profile?.role == UserRole.seller
+                              ? 'Seller tools are ready in LOT 4. Open Market or your profile to manage products, stock, prices and visibility.'
+                              : 'The live Firestore catalogue arrives in LOT 5. Authentication and persistent roles are already connected.',
+                          style: const TextStyle(
                             color: AppColors.muted,
                             height: 1.5,
                           ),
