@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../../core/navigation/app_transitions.dart';
 import '../../../core/theme/app_theme.dart';
@@ -18,6 +16,7 @@ import '../../profile/presentation/edit_profile_page.dart';
 import '../../saved/presentation/saved_products_page.dart';
 import '../../seller/presentation/seller_dashboard_page.dart';
 import 'widgets/featured_card.dart';
+import 'widgets/stacked_featured_deck.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, this.profile});
@@ -31,39 +30,48 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final _pageController = PageController(viewportFraction: 0.90);
   final _authService = AuthService();
   final _products = ProductRepository();
   int _navIndex = 0;
 
   static const _featured = [
     FeaturedCardData(
+      eyebrow: 'Curated for you',
       title: 'Fresh picks',
-      subtitle: 'Discover what is trending across e-market.',
+      subtitle: 'Discover standout finds selected from across e-market.',
       icon: Icons.auto_awesome_rounded,
+      gradientStart: Color(0xFF101826),
+      gradientEnd: Color(0xFF243A59),
+      accent: Color(0xFF4C9BFF),
     ),
     FeaturedCardData(
+      eyebrow: 'Tech edit',
       title: 'Electronics',
-      subtitle: 'Smart devices, accessories and everyday tech.',
+      subtitle: 'Smart devices, accessories and everyday technology.',
       icon: Icons.headphones_rounded,
+      gradientStart: Color(0xFF073B4C),
+      gradientEnd: Color(0xFF116B86),
+      accent: Color(0xFF27B8E6),
     ),
     FeaturedCardData(
+      eyebrow: 'New season',
       title: 'Style drop',
-      subtitle: 'New fashion arrivals selected for you.',
+      subtitle: 'Fresh fashion arrivals with a clean premium look.',
       icon: Icons.checkroom_rounded,
+      gradientStart: Color(0xFF2A1738),
+      gradientEnd: Color(0xFF6F3A88),
+      accent: Color(0xFFC16BF0),
     ),
     FeaturedCardData(
+      eyebrow: 'Everyday upgrade',
       title: 'Home essentials',
-      subtitle: 'Useful finds for a cleaner, calmer home.',
+      subtitle: 'Useful finds for a cleaner, calmer and smarter home.',
       icon: Icons.chair_alt_rounded,
+      gradientStart: Color(0xFF153229),
+      gradientEnd: Color(0xFF2D6B59),
+      accent: Color(0xFF55C59F),
     ),
   ];
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
 
   Future<void> _openAuthentication() async {
     await Navigator.of(context).push(
@@ -406,36 +414,9 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      SizedBox(
-                        height: 330,
-                        child: PageView.builder(
-                          controller: _pageController,
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: _featured.length,
-                          itemBuilder: (context, index) {
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: FeaturedCard(data: _featured[index])
-                                  .animate()
-                                  .fadeIn(duration: 350.ms)
-                                  .slideX(begin: 0.06, end: 0),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Center(
-                        child: SmoothPageIndicator(
-                          controller: _pageController,
-                          count: _featured.length,
-                          effect: const ExpandingDotsEffect(
-                            dotHeight: 7,
-                            dotWidth: 7,
-                            expansionFactor: 3.2,
-                            activeDotColor: AppColors.accent,
-                            dotColor: AppColors.line,
-                          ),
-                        ),
+                      FeaturedCardDeck(
+                        items: _featured,
+                        onTap: _openCatalogue,
                       ),
                       const SizedBox(height: 30),
                       Row(
