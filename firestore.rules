@@ -224,8 +224,10 @@ service cloud.firestore {
           'fulfillmentType',
           'paymentMethod',
           'paymentStatus',
+          'paymentReference',
           'currency',
           'total',
+          'itemCount',
           'deliveryAddress',
           'createdAt',
           'updatedAt'
@@ -239,8 +241,10 @@ service cloud.firestore {
           'fulfillmentType',
           'paymentMethod',
           'paymentStatus',
+          'paymentReference',
           'currency',
           'total',
+          'itemCount',
           'deliveryAddress',
           'createdAt',
           'updatedAt'
@@ -254,9 +258,14 @@ service cloud.firestore {
         && data.fulfillmentType in ['delivery', 'pickup']
         && data.paymentMethod in ['cash', 'mobile_money', 'card']
         && data.paymentStatus in ['pending', 'paid', 'failed']
+        && data.paymentReference is string
+        && data.paymentReference.size() > 0
         && validCurrency(data.currency)
         && data.total is number
         && data.total >= 0
+        && data.itemCount is int
+        && data.itemCount > 0
+        && data.itemCount <= 99
         && data.deliveryAddress is string
         && (data.fulfillmentType == 'pickup' || data.deliveryAddress.size() > 0);
     }
@@ -277,7 +286,7 @@ service cloud.firestore {
         || (before == 'ready' && after in ['completed', 'cancelled']);
     }
 
-    function validOrderItem(orderId, data) {
+    function validOrderItem(orderId, itemId, data) {
       return data.keys().hasOnly([
           'productId',
           'sellerId',
@@ -298,20 +307,27 @@ service cloud.firestore {
           'subtotal',
           'currency'
         ])
-        && data.productId is string
+        && data.productId == itemId
         && data.sellerId is string
         && data.productName is string
         && data.imageRef is string
         && data.quantity is int
         && data.quantity > 0
+        && data.quantity <= 99
         && data.unitPrice is number
         && data.unitPrice >= 0
         && data.subtotal is number
-        && data.subtotal >= 0
+        && data.subtotal == data.unitPrice * data.quantity
         && validCurrency(data.currency)
         && productExists(data.productId)
-        && getAfter(/databases/$(database)/documents/orders/$(orderId)).data.sellerId == data.sellerId
-        && getAfter(/databases/$(database)/documents/orders/$(orderId)).data.currency == data.currency;
+        && get(/databases/$(database)/documents/products/$(data.productId)).data.active == true
+        && get(/databases/$(database)/documents/products/$(data.productId)).data.sellerId == data.sellerId
+        && get(/databases/$(database)/documents/products/$(data.productId)).data.name == data.productName
+        && get(/databases/$(database)/documents/products/$(data.productId)).data.imageRef == data.imageRef
+        && get(/databases/$(database)/documents/products/$(data.productId)).data.price == data.unitPrice
+        && get(/databases/$(database)/documents/products/$(data.productId)).data.currency == data.currency
+        && data.quantity <= get(/databases/$(database)/documents/products/$(data.productId)).data.stock
+        && getAfter(/databases/$(database)/documents/orders/$(orderId)).data.sellerId == data.sellerId;
     }
 
     match /users/{uid} {
@@ -426,6 +442,10 @@ service cloud.firestore {
       allow create: if isClient()
         && validOrder(request.resource.data)
         && request.resource.data.clientId == request.auth.uid
+        && request.resource.data.clientName
+          == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.name
+        && request.resource.data.clientPhone
+          == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.phone
         && isSellerUid(request.resource.data.sellerId)
         && request.resource.data.status == 'pending'
         && request.resource.data.paymentStatus in ['pending', 'paid']
@@ -438,9 +458,19 @@ service cloud.firestore {
         && resource.data.sellerId == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'status',
+          'paymentStatus',
           'updatedAt'
         ])
         && validStatusTransition(resource.data.status, request.resource.data.status)
+        && (
+          request.resource.data.paymentStatus == resource.data.paymentStatus
+          || (
+            resource.data.paymentMethod == 'cash'
+            && resource.data.paymentStatus == 'pending'
+            && request.resource.data.paymentStatus == 'paid'
+            && request.resource.data.status == 'completed'
+          )
+        )
         && request.resource.data.updatedAt == request.time;
 
       allow delete: if false;
@@ -453,7 +483,7 @@ service cloud.firestore {
         allow create: if isClient()
           && getAfter(/databases/$(database)/documents/orders/$(orderId)).data.clientId == request.auth.uid
           && getAfter(/databases/$(database)/documents/orders/$(orderId)).data.status == 'pending'
-          && validOrderItem(orderId, request.resource.data);
+          && validOrderItem(orderId, itemId, request.resource.data);
 
         allow update, delete: if false;
       }

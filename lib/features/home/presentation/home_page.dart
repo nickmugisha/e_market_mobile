@@ -13,6 +13,7 @@ import '../../catalogue/domain/product.dart';
 import '../../catalogue/presentation/catalogue_page.dart';
 import '../../catalogue/presentation/product_detail_page.dart';
 import '../../catalogue/presentation/widgets/catalogue_product_card.dart';
+import '../../orders/presentation/order_history_page.dart';
 import '../../seller/presentation/seller_dashboard_page.dart';
 import 'widgets/featured_card.dart';
 
@@ -122,6 +123,20 @@ class _HomePageState extends State<HomePage> {
                   icon: Icons.phone_outlined,
                   label: profile.phone,
                 ),
+                if (profile.role == UserRole.client) ...[
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _openOrders();
+                      },
+                      icon: const Icon(Icons.receipt_long_rounded),
+                      label: const Text('My orders'),
+                    ),
+                  ),
+                ],
                 if (profile.role == UserRole.seller) ...[
                   const SizedBox(height: 10),
                   _ProfileLine(
@@ -158,6 +173,15 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _openOrders() async {
+    final profile = widget.profile;
+    if (profile == null) return;
+
+    await Navigator.of(context).push(
+      smoothRoute(OrderHistoryPage(profile: profile)),
     );
   }
 

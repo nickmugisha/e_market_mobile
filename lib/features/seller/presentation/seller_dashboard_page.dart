@@ -7,6 +7,7 @@ import '../../auth/domain/user_profile.dart';
 import '../../catalogue/data/category_repository.dart';
 import '../../catalogue/data/product_repository.dart';
 import '../../catalogue/domain/product.dart';
+import '../../orders/presentation/order_history_page.dart';
 import 'product_form_page.dart';
 
 class SellerDashboardPage extends StatefulWidget {
@@ -172,6 +173,21 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
                 _SellerHero(
                   name: widget.profile.firstName,
                   whatsapp: widget.profile.whatsappNumber,
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        smoothRoute(
+                          OrderHistoryPage(profile: widget.profile),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.receipt_long_rounded),
+                    label: const Text('View seller orders'),
+                  ),
                 ),
                 const SizedBox(height: 18),
                 Row(

@@ -6,7 +6,9 @@ import '../../auth/domain/user_profile.dart';
 import '../../cart/data/cart_repository.dart';
 import '../../catalogue/data/product_repository.dart';
 import '../../catalogue/domain/product.dart';
+import '../../orders/data/order_repository.dart';
 import '../../orders/domain/order_models.dart';
+import '../../orders/presentation/order_detail_page.dart';
 import '../domain/checkout_draft.dart';
 import '../domain/checkout_validator.dart';
 import '../services/payment_simulator.dart';
@@ -31,6 +33,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   final _cart = CartRepository();
   final _products = ProductRepository();
   final _paymentSimulator = const PaymentSimulator();
+  final _orders = OrderRepository();
   final _currencyService = const CurrencyService();
 
   FulfillmentType _fulfillment = FulfillmentType.delivery;
@@ -38,6 +41,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   late MarketCurrency _displayCurrency;
 
   bool _processing = false;
+  bool _placingOrder = false;
   CheckoutDraft? _readyDraft;
   PaymentSimulationResult? _paymentResult;
 
@@ -126,6 +130,47 @@ class _CheckoutPageState extends State<CheckoutPage> {
       );
     } finally {
       if (mounted) setState(() => _processing = false);
+    }
+  }
+
+  Future<void> _placeOrder() async {
+    final draft = _readyDraft;
+    final paymentResult = _paymentResult;
+
+    if (draft == null || paymentResult == null || _placingOrder) return;
+
+    setState(() => _placingOrder = true);
+
+    try {
+      final orderId = await _orders.placeOrder(
+        draft: draft,
+        paymentReference: paymentResult.reference,
+      );
+
+      if (!mounted) return;
+
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => OrderDetailPage(
+            orderId: orderId,
+            profile: widget.profile,
+          ),
+        ),
+      );
+    } on OrderFailure catch (error) {
+      _showMessage(error.message);
+      if (mounted) {
+        setState(() {
+          _readyDraft = null;
+          _paymentResult = null;
+        });
+      }
+    } catch (_) {
+      _showMessage(
+        'Could not create the order. The cart was not intentionally cleared.',
+      );
+    } finally {
+      if (mounted) setState(() => _placingOrder = false);
     }
   }
 
@@ -319,6 +364,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 draft: _readyDraft!,
                 paymentResult: _paymentResult!,
                 currencyService: _currencyService,
+                placingOrder: _placingOrder,
+                onPlaceOrder: _placeOrder,
               ),
             ],
           ],
@@ -543,11 +590,15 @@ class _ReadyForOrderCard extends StatelessWidget {
     required this.draft,
     required this.paymentResult,
     required this.currencyService,
+    required this.placingOrder,
+    required this.onPlaceOrder,
   });
 
   final CheckoutDraft draft;
   final PaymentSimulationResult paymentResult;
   final CurrencyService currencyService;
+  final bool placingOrder;
+  final VoidCallback onPlaceOrder;
 
   @override
   Widget build(BuildContext context) {
@@ -617,12 +668,31 @@ class _ReadyForOrderCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           const Text(
-            'Checkout is validated. LOT 8 will turn this validated draft into a real Firestore order and update stock.',
+            'Placing the order creates a real Firestore order and clears the cart. Stock is reserved when the seller confirms the order.',
             style: TextStyle(
               color: AppColors.ink,
               fontSize: 12,
               height: 1.45,
               fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: placingOrder ? null : onPlaceOrder,
+              icon: placingOrder
+                  ? const SizedBox.square(
+                      dimension: 17,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.receipt_long_rounded),
+              label: Text(
+                placingOrder ? 'Placing order...' : 'Place order',
+              ),
             ),
           ),
         ],
