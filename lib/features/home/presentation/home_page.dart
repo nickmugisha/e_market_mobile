@@ -6,7 +6,9 @@ import '../../auth/data/auth_service.dart';
 import '../../auth/domain/user_profile.dart';
 import '../../auth/presentation/auth_page.dart';
 import '../../cart/presentation/cart_page.dart';
+import '../../catalogue/data/category_repository.dart';
 import '../../catalogue/data/product_repository.dart';
+import '../../catalogue/domain/market_category.dart';
 import '../../catalogue/domain/product.dart';
 import '../../catalogue/presentation/catalogue_page.dart';
 import '../../catalogue/presentation/product_detail_page.dart';
@@ -32,6 +34,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final _authService = AuthService();
   final _products = ProductRepository();
+  final _categories = CategoryRepository();
   int _navIndex = 0;
 
   static const _featured = [
@@ -114,7 +117,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${profile.role.label} • ${profile.email}',
+                  '${profile.role.label} â€¢ ${profile.email}',
                   style: const TextStyle(color: AppColors.muted),
                 ),
                 const SizedBox(height: 18),
@@ -243,6 +246,17 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> _openCategory(MarketCategory category) {
+    return Navigator.of(context).push(
+      smoothRoute(
+        CataloguePage(
+          profile: widget.profile,
+          initialCategoryId: category.id,
+        ),
+      ),
+    );
+  }
+
   Future<void> _openProduct(Product product) {
     return Navigator.of(context).push(
       smoothRoute(
@@ -298,12 +312,13 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final profile = widget.profile;
+    final firstName = profile?.firstName.trim();
     final greeting = widget.isVisitor
         ? 'Hello, visitor'
-        : 'Hello, ${profile!.firstName}';
+        : 'Hello, ${firstName == null || firstName.isEmpty ? 'there' : firstName}';
     final subtitle = widget.isVisitor
-        ? 'Browse freely. Sign in when you are ready to buy.'
-        : '${profile!.role.label} account • Firebase connected';
+        ? 'Discover freely. Sign in only when you are ready.'
+        : '${profile!.role.label} account â€¢ Firebase connected';
 
     return Scaffold(
       backgroundColor: AppColors.ink,
@@ -311,58 +326,13 @@ class _HomePageState extends State<HomePage> {
         bottom: false,
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: _showProfile,
-                    child: const CircleAvatar(
-                      radius: 23,
-                      backgroundColor: Colors.white,
-                      child: Icon(
-                        Icons.person_rounded,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          greeting,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white54,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton.filledTonal(
-                    onPressed: () {},
-                    icon: const Icon(Icons.notifications_none_rounded),
-                  ),
-                  const SizedBox(width: 6),
-                  IconButton.filledTonal(
-                    onPressed: _openCart,
-                    icon: const Icon(Icons.shopping_bag_outlined),
-                  ),
-                ],
-              ),
+            _PremiumHomeHeader(
+              greeting: greeting,
+              subtitle: subtitle,
+              isVisitor: widget.isVisitor,
+              roleLabel: profile?.role.label,
+              onProfile: _showProfile,
+              onCart: _openCart,
             ),
             Expanded(
               child: Container(
@@ -370,8 +340,8 @@ class _HomePageState extends State<HomePage> {
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(34),
-                    topRight: Radius.circular(34),
+                    topLeft: Radius.circular(36),
+                    topRight: Radius.circular(36),
                   ),
                 ),
                 child: SingleChildScrollView(
@@ -380,63 +350,42 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          const Expanded(
-                            child: Text(
-                              'Featured market',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -1.1,
-                              ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: _openCatalogue,
-                            child: const Text('Browse all'),
-                          ),
-                        ],
+                      _SectionHeading(
+                        eyebrow: 'DISCOVER',
+                        title: 'Featured market',
+                        actionLabel: 'Browse all',
+                        onAction: _openCatalogue,
                       ),
-                      const SizedBox(height: 12),
-                      InkWell(
-                        onTap: _openCatalogue,
-                        borderRadius: BorderRadius.circular(18),
-                        child: const IgnorePointer(
-                          child: TextField(
-                            decoration: InputDecoration(
-                              hintText:
-                                  'Search products, categories, sellers...',
-                              prefixIcon: Icon(Icons.search_rounded),
-                              suffixIcon: Icon(Icons.tune_rounded),
-                            ),
-                          ),
-                        ),
+                      const SizedBox(height: 14),
+                      _HomeSearchCard(onTap: _openCatalogue),
+                      const SizedBox(height: 18),
+                      StreamBuilder<List<MarketCategory>>(
+                        stream: _categories.watchActiveCategories(),
+                        builder: (context, snapshot) {
+                          final categories =
+                              snapshot.data ?? const <MarketCategory>[];
+
+                          return _HomeCategoryStrip(
+                            categories: categories,
+                            onAll: _openCatalogue,
+                            onCategory: _openCategory,
+                          );
+                        },
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                       FeaturedCardDeck(
                         items: _featured,
                         onTap: _openCatalogue,
                       ),
-                      const SizedBox(height: 30),
-                      Row(
-                        children: [
-                          const Expanded(
-                            child: Text(
-                              'Latest products',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: _openCatalogue,
-                            child: const Text('View all'),
-                          ),
-                        ],
+                      const SizedBox(height: 34),
+                      _SectionHeading(
+                        eyebrow: 'JUST IN',
+                        title: 'Latest products',
+                        actionLabel: 'View all',
+                        onAction: _openCatalogue,
+                        compact: true,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       StreamBuilder<List<Product>>(
                         stream: _products.watchActiveProducts(),
                         builder: (context, snapshot) {
@@ -444,7 +393,7 @@ class _HomePageState extends State<HomePage> {
                                   ConnectionState.waiting &&
                               !snapshot.hasData) {
                             return const SizedBox(
-                              height: 150,
+                              height: 170,
                               child: Center(
                                 child: CircularProgressIndicator(),
                               ),
@@ -481,8 +430,8 @@ class _HomePageState extends State<HomePage> {
                             gridDelegate:
                                 const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 13,
+                              mainAxisSpacing: 14,
                               childAspectRatio: 0.67,
                             ),
                             itemBuilder: (context, index) {
@@ -525,6 +474,525 @@ class _HomePageState extends State<HomePage> {
             label: 'Profile',
           ),
         ],
+      ),
+    );
+  }
+
+}
+
+
+class _PremiumHomeHeader extends StatelessWidget {
+  const _PremiumHomeHeader({
+    required this.greeting,
+    required this.subtitle,
+    required this.isVisitor,
+    required this.roleLabel,
+    required this.onProfile,
+    required this.onCart,
+  });
+
+  final String greeting;
+  final String subtitle;
+  final bool isVisitor;
+  final String? roleLabel;
+  final VoidCallback onProfile;
+  final VoidCallback onCart;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 146,
+      child: Stack(
+        children: [
+          Positioned(
+            right: -62,
+            top: -72,
+            child: Container(
+              width: 210,
+              height: 210,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.accent.withValues(alpha: 0.13),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 92,
+            bottom: -44,
+            child: Transform.rotate(
+              angle: -0.30,
+              child: Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.05),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Row(
+              children: [
+                _HeaderAvatar(
+                  isVisitor: isVisitor,
+                  onTap: onProfile,
+                ),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              greeting,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.7,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 7),
+                          const Text(
+                            'âœ¦',
+                            style: TextStyle(
+                              color: AppColors.accent,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 11,
+                          height: 1.25,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.075),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.07),
+                          ),
+                        ),
+                        child: Text(
+                          isVisitor
+                              ? 'EXPLORE MODE'
+                              : '${roleLabel?.toUpperCase() ?? 'ACCOUNT'} â€¢ LIVE',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _HeaderActionButton(
+                  icon: Icons.notifications_none_rounded,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('You are all caught up for now.'),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 7),
+                _HeaderActionButton(
+                  icon: Icons.shopping_bag_outlined,
+                  onTap: onCart,
+                  accent: true,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeaderAvatar extends StatelessWidget {
+  const _HeaderAvatar({
+    required this.isVisitor,
+    required this.onTap,
+  });
+
+  final bool isVisitor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.20),
+              width: 2,
+            ),
+          ),
+          child: Icon(
+            isVisitor ? Icons.explore_rounded : Icons.person_rounded,
+            color: AppColors.ink,
+            size: 24,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderActionButton extends StatelessWidget {
+  const _HeaderActionButton({
+    required this.icon,
+    required this.onTap,
+    this.accent = false,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: accent
+          ? AppColors.accent
+          : Colors.white.withValues(alpha: 0.085),
+      borderRadius: BorderRadius.circular(17),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(17),
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(17),
+            border: Border.all(
+              color: accent
+                  ? AppColors.accent
+                  : Colors.white.withValues(alpha: 0.08),
+            ),
+          ),
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: 21,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({
+    required this.eyebrow,
+    required this.title,
+    required this.actionLabel,
+    required this.onAction,
+    this.compact = false,
+  });
+
+  final String eyebrow;
+  final String title;
+  final String actionLabel;
+  final VoidCallback onAction;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                eyebrow,
+                style: const TextStyle(
+                  color: AppColors.accent,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.6,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: compact ? 22 : 29,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: compact ? -0.7 : -1.15,
+                ),
+              ),
+            ],
+          ),
+        ),
+        TextButton.icon(
+          onPressed: onAction,
+          iconAlignment: IconAlignment.end,
+          icon: const Icon(
+            Icons.arrow_outward_rounded,
+            size: 16,
+          ),
+          label: Text(actionLabel),
+        ),
+      ],
+    );
+  }
+}
+
+class _HomeSearchCard extends StatelessWidget {
+  const _HomeSearchCard({
+    required this.onTap,
+  });
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.canvas,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 62),
+          padding: const EdgeInsets.fromLTRB(15, 10, 10, 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: AppColors.line),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 39,
+                height: 39,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.search_rounded,
+                  color: AppColors.ink,
+                  size: 21,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Search e-market',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Products, categories or sellers',
+                      style: TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 41,
+                height: 41,
+                decoration: BoxDecoration(
+                  color: AppColors.ink,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const Icon(
+                  Icons.tune_rounded,
+                  color: Colors.white,
+                  size: 19,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeCategoryStrip extends StatelessWidget {
+  const _HomeCategoryStrip({
+    required this.categories,
+    required this.onAll,
+    required this.onCategory,
+  });
+
+  final List<MarketCategory> categories;
+  final VoidCallback onAll;
+  final ValueChanged<MarketCategory> onCategory;
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = categories.take(6).toList();
+
+    return SizedBox(
+      height: 84,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: visible.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return _HomeCategoryCard(
+              label: 'All',
+              icon: Icons.grid_view_rounded,
+              onTap: onAll,
+              featured: true,
+            );
+          }
+
+          final category = visible[index - 1];
+          return _HomeCategoryCard(
+            label: category.name,
+            icon: _categoryIcon(category.name),
+            onTap: () => onCategory(category),
+          );
+        },
+      ),
+    );
+  }
+
+  static IconData _categoryIcon(String value) {
+    final normalized = value.toLowerCase();
+
+    if (normalized.contains('fashion') ||
+        normalized.contains('style') ||
+        normalized.contains('cloth')) {
+      return Icons.checkroom_rounded;
+    }
+    if (normalized.contains('elect') ||
+        normalized.contains('tech') ||
+        normalized.contains('phone')) {
+      return Icons.devices_rounded;
+    }
+    if (normalized.contains('beauty') ||
+        normalized.contains('care')) {
+      return Icons.auto_awesome_rounded;
+    }
+    if (normalized.contains('home') ||
+        normalized.contains('house')) {
+      return Icons.chair_alt_rounded;
+    }
+    if (normalized.contains('food')) {
+      return Icons.local_dining_rounded;
+    }
+
+    return Icons.local_mall_outlined;
+  }
+}
+
+class _HomeCategoryCard extends StatelessWidget {
+  const _HomeCategoryCard({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.featured = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool featured;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: featured ? AppColors.ink : Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          width: 84,
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: featured ? AppColors.ink : AppColors.line,
+            ),
+            boxShadow: featured
+                ? null
+                : [
+                    BoxShadow(
+                      color: AppColors.ink.withValues(alpha: 0.035),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                color: featured ? Colors.white : AppColors.accent,
+                size: 22,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: featured ? Colors.white : AppColors.ink,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
