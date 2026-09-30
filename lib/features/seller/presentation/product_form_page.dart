@@ -130,6 +130,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
       if (widget.product == null) {
         await _products.createProduct(
           sellerId: widget.profile.uid,
+          sellerName: widget.profile.name,
+          sellerWhatsapp: widget.profile.whatsappNumber,
           name: _name.text,
           description: _description.text,
           categoryId: category.id,
@@ -143,6 +145,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
       } else {
         await _products.updateProduct(
           widget.product!.copyWith(
+            sellerName: widget.profile.name,
+            sellerWhatsapp: widget.profile.whatsappNumber,
             name: _name.text.trim(),
             description: _description.text.trim(),
             categoryId: category.id,

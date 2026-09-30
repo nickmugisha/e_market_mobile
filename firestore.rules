@@ -98,6 +98,8 @@ service cloud.firestore {
     function validProduct(data) {
       return data.keys().hasOnly([
           'sellerId',
+          'sellerName',
+          'sellerWhatsapp',
           'name',
           'description',
           'categoryId',
@@ -112,6 +114,8 @@ service cloud.firestore {
         ])
         && data.keys().hasAll([
           'sellerId',
+          'sellerName',
+          'sellerWhatsapp',
           'name',
           'description',
           'categoryId',
@@ -125,6 +129,9 @@ service cloud.firestore {
           'updatedAt'
         ])
         && data.sellerId is string
+        && data.sellerName is string
+        && data.sellerName.size() > 0
+        && data.sellerWhatsapp is string
         && data.name is string
         && data.name.size() > 0
         && data.description is string
@@ -332,12 +339,20 @@ service cloud.firestore {
       allow create: if isSeller()
         && validProduct(request.resource.data)
         && request.resource.data.sellerId == request.auth.uid
+        && request.resource.data.sellerName
+          == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.name
+        && request.resource.data.sellerWhatsapp
+          == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.whatsappNumber
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time;
 
       allow update: if isSeller()
         && resource.data.sellerId == request.auth.uid
         && request.resource.data.sellerId == resource.data.sellerId
+        && request.resource.data.sellerName
+          == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.name
+        && request.resource.data.sellerWhatsapp
+          == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.whatsappNumber
         && request.resource.data.createdAt == resource.data.createdAt
         && validProduct(request.resource.data)
         && request.resource.data.updatedAt == request.time;

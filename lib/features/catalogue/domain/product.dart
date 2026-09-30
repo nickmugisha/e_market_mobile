@@ -31,12 +31,16 @@ class Product {
     required this.stock,
     required this.imageRef,
     required this.active,
+    this.sellerName = '',
+    this.sellerWhatsapp = '',
     this.createdAt,
     this.updatedAt,
   });
 
   final String id;
   final String sellerId;
+  final String sellerName;
+  final String sellerWhatsapp;
   final String name;
   final String description;
   final String categoryId;
@@ -51,10 +55,17 @@ class Product {
 
   bool get inStock => active && stock > 0;
 
+  String get displaySellerName {
+    final value = sellerName.trim();
+    return value.isEmpty ? 'e-market seller' : value;
+  }
+
   factory Product.fromMap(String id, Map<String, dynamic> data) {
     return Product(
       id: id,
       sellerId: data['sellerId'] as String? ?? '',
+      sellerName: data['sellerName'] as String? ?? '',
+      sellerWhatsapp: data['sellerWhatsapp'] as String? ?? '',
       name: data['name'] as String? ?? '',
       description: data['description'] as String? ?? '',
       categoryId: data['categoryId'] as String? ?? '',
@@ -72,6 +83,8 @@ class Product {
   Product copyWith({
     String? id,
     String? sellerId,
+    String? sellerName,
+    String? sellerWhatsapp,
     String? name,
     String? description,
     String? categoryId,
@@ -87,6 +100,8 @@ class Product {
     return Product(
       id: id ?? this.id,
       sellerId: sellerId ?? this.sellerId,
+      sellerName: sellerName ?? this.sellerName,
+      sellerWhatsapp: sellerWhatsapp ?? this.sellerWhatsapp,
       name: name ?? this.name,
       description: description ?? this.description,
       categoryId: categoryId ?? this.categoryId,

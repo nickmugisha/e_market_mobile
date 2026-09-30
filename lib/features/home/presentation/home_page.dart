@@ -7,6 +7,11 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/data/auth_service.dart';
 import '../../auth/domain/user_profile.dart';
 import '../../auth/presentation/auth_page.dart';
+import '../../catalogue/data/product_repository.dart';
+import '../../catalogue/domain/product.dart';
+import '../../catalogue/presentation/catalogue_page.dart';
+import '../../catalogue/presentation/product_detail_page.dart';
+import '../../catalogue/presentation/widgets/catalogue_product_card.dart';
 import '../../seller/presentation/seller_dashboard_page.dart';
 import 'widgets/featured_card.dart';
 
@@ -24,16 +29,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final _pageController = PageController(viewportFraction: 0.90);
   final _authService = AuthService();
-  int _selectedCategory = 0;
+  final _products = ProductRepository();
   int _navIndex = 0;
-
-  static const _categories = [
-    'All',
-    'Fashion',
-    'Electronics',
-    'Beauty',
-    'Home',
-  ];
 
   static const _featured = [
     FeaturedCardData(
@@ -172,14 +169,32 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> _openCatalogue() {
+    return Navigator.of(context).push(
+      smoothRoute(CataloguePage(profile: widget.profile)),
+    );
+  }
+
+  Future<void> _openProduct(Product product) {
+    return Navigator.of(context).push(
+      smoothRoute(
+        ProductDetailPage(
+          productId: product.id,
+          initialProduct: product,
+          profile: widget.profile,
+          onSignInRequested: _openAuthentication,
+        ),
+      ),
+    );
+  }
+
   void _onNavigationSelected(int index) {
-    if (index == 1 &&
-        widget.profile?.role == UserRole.seller) {
-      _openSellerDashboard();
+    if (index == 1) {
+      _openCatalogue();
       return;
     }
     if (index == 2) {
-      _protectedAction('Saved products arrive in a later LOT.');
+      _protectedAction('Saved products arrive in LOT 9.');
       return;
     }
     if (index == 3) {
@@ -276,9 +291,9 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
-                          Expanded(
+                          const Expanded(
                             child: Text(
                               'Featured market',
                               style: TextStyle(
@@ -288,46 +303,28 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                           ),
-                          Text(
-                            'Swipe →',
-                            style: TextStyle(
-                              color: AppColors.accent,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          TextButton(
+                            onPressed: _openCatalogue,
+                            child: const Text('Browse all'),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        height: 44,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _categories.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(width: 8),
-                          itemBuilder: (context, index) {
-                            final selected = index == _selectedCategory;
-                            return ChoiceChip(
-                              label: Text(_categories[index]),
-                              selected: selected,
-                              showCheckmark: false,
-                              selectedColor: AppColors.ink,
-                              backgroundColor: AppColors.canvas,
-                              labelStyle: TextStyle(
-                                color: selected
-                                    ? Colors.white
-                                    : AppColors.muted,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              side: BorderSide.none,
-                              onSelected: (_) => setState(
-                                () => _selectedCategory = index,
-                              ),
-                            );
-                          },
+                      const SizedBox(height: 12),
+                      InkWell(
+                        onTap: _openCatalogue,
+                        borderRadius: BorderRadius.circular(18),
+                        child: const IgnorePointer(
+                          child: TextField(
+                            decoration: InputDecoration(
+                              hintText:
+                                  'Search products, categories, sellers...',
+                              prefixIcon: Icon(Icons.search_rounded),
+                              suffixIcon: Icon(Icons.tune_rounded),
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 22),
+                      const SizedBox(height: 20),
                       SizedBox(
                         height: 330,
                         child: PageView.builder(
@@ -360,30 +357,81 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       const SizedBox(height: 30),
-                      const Text(
-                        'Popular products',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.canvas,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Text(
-                          widget.profile?.role == UserRole.seller
-                              ? 'Seller tools are ready in LOT 4. Open Market or your profile to manage products, stock, prices and visibility.'
-                              : 'The live Firestore catalogue arrives in LOT 5. Authentication and persistent roles are already connected.',
-                          style: const TextStyle(
-                            color: AppColors.muted,
-                            height: 1.5,
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Latest products',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
                           ),
-                        ),
+                          TextButton(
+                            onPressed: _openCatalogue,
+                            child: const Text('View all'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      StreamBuilder<List<Product>>(
+                        stream: _products.watchActiveProducts(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                                  ConnectionState.waiting &&
+                              !snapshot.hasData) {
+                            return const SizedBox(
+                              height: 150,
+                              child: Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+                          }
+
+                          if (snapshot.hasError) {
+                            return const _HomeCatalogueMessage(
+                              icon: Icons.cloud_off_rounded,
+                              title: 'Catalogue unavailable',
+                              message:
+                                  'Check your connection and try the Market page again.',
+                            );
+                          }
+
+                          final products =
+                              snapshot.data ?? const <Product>[];
+
+                          if (products.isEmpty) {
+                            return const _HomeCatalogueMessage(
+                              icon: Icons.inventory_2_outlined,
+                              title: 'No products yet',
+                              message:
+                                  'Products added by sellers will appear here automatically.',
+                            );
+                          }
+
+                          final latest = products.take(4).toList();
+
+                          return GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: latest.length,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 0.67,
+                            ),
+                            itemBuilder: (context, index) {
+                              final product = latest[index];
+                              return CatalogueProductCard(
+                                product: product,
+                                onTap: () => _openProduct(product),
+                              );
+                            },
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -434,6 +482,52 @@ class _ProfileLine extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(child: Text(label)),
       ],
+    );
+  }
+}
+
+class _HomeCatalogueMessage extends StatelessWidget {
+  const _HomeCatalogueMessage({
+    required this.icon,
+    required this.title,
+    required this.message,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: AppColors.canvas,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: AppColors.accent, size: 38),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.muted,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

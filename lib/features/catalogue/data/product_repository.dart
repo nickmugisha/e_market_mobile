@@ -45,6 +45,8 @@ class ProductRepository {
 
   Future<String> createProduct({
     required String sellerId,
+    required String sellerName,
+    required String sellerWhatsapp,
     required String name,
     required String description,
     required String categoryId,
@@ -58,6 +60,8 @@ class ProductRepository {
     final ref = _products.doc();
     await ref.set({
       'sellerId': sellerId,
+      'sellerName': sellerName.trim(),
+      'sellerWhatsapp': sellerWhatsapp.trim(),
       'name': name.trim(),
       'description': description.trim(),
       'categoryId': categoryId,
@@ -75,6 +79,8 @@ class ProductRepository {
 
   Future<void> updateProduct(Product product) {
     return _products.doc(product.id).update({
+      'sellerName': product.sellerName.trim(),
+      'sellerWhatsapp': product.sellerWhatsapp.trim(),
       'name': product.name.trim(),
       'description': product.description.trim(),
       'categoryId': product.categoryId,
@@ -106,8 +112,10 @@ class ProductRepository {
       _products.doc(productId).delete();
 
   int _newestFirst(Product a, Product b) {
-    final aDate = a.updatedAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-    final bDate = b.updatedAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final aDate =
+        a.updatedAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final bDate =
+        b.updatedAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
     return bDate.compareTo(aDate);
   }
 }
