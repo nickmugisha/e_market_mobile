@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/data/auth_service.dart';
 import '../../auth/domain/user_profile.dart';
 import '../../auth/presentation/auth_page.dart';
+import '../../cart/presentation/cart_page.dart';
 import '../../catalogue/data/product_repository.dart';
 import '../../catalogue/domain/product.dart';
 import '../../catalogue/presentation/catalogue_page.dart';
@@ -188,6 +189,29 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> _openCart() async {
+    final profile = widget.profile;
+
+    if (profile == null) {
+      await _openAuthentication();
+      return;
+    }
+
+    if (profile.role != UserRole.client) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('The shopping cart is available to client accounts.'),
+        ),
+      );
+      return;
+    }
+
+    await Navigator.of(context).push(
+      smoothRoute(CartPage(profile: profile)),
+    );
+  }
+
   void _onNavigationSelected(int index) {
     if (index == 1) {
       _openCatalogue();
@@ -267,9 +291,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(width: 6),
                   IconButton.filledTonal(
-                    onPressed: () => _protectedAction(
-                      'Your cart will be implemented in LOT 6.',
-                    ),
+                    onPressed: _openCart,
                     icon: const Icon(Icons.shopping_bag_outlined),
                   ),
                 ],

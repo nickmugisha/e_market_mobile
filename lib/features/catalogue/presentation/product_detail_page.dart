@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../auth/domain/user_profile.dart';
+import '../../cart/data/cart_repository.dart';
+import '../../cart/presentation/cart_page.dart';
 import '../data/product_repository.dart';
 import '../domain/product.dart';
 
@@ -21,6 +23,7 @@ class ProductDetailPage extends StatelessWidget {
   final Future<void> Function()? onSignInRequested;
 
   final ProductRepository _products = ProductRepository();
+  final CartRepository _cart = CartRepository();
 
   @override
   Widget build(BuildContext context) {
@@ -130,7 +133,7 @@ class ProductDetailPage extends StatelessWidget {
             child: FilledButton.icon(
               onPressed: product.stock <= 0
                   ? null
-                  : () => _handlePrimaryAction(context),
+                  : () => _handlePrimaryAction(context, product),
               icon: Icon(
                 profile == null
                     ? Icons.login_rounded
@@ -141,7 +144,9 @@ class ProductDetailPage extends StatelessWidget {
                     ? 'Currently sold out'
                     : profile == null
                         ? 'Sign in to buy'
-                        : 'Add to cart in LOT 6',
+                        : profile!.role == UserRole.client
+                            ? 'Add to cart'
+                            : 'Client account required',
               ),
             ),
           ),
@@ -150,7 +155,10 @@ class ProductDetailPage extends StatelessWidget {
     );
   }
 
-  Future<void> _handlePrimaryAction(BuildContext context) async {
+  Future<void> _handlePrimaryAction(
+    BuildContext context,
+    Product product,
+  ) async {
     if (profile == null) {
       if (onSignInRequested != null) {
         await onSignInRequested!();
@@ -158,15 +166,59 @@ class ProductDetailPage extends StatelessWidget {
       return;
     }
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Product browsing is ready. Cart and stock validation arrive in LOT 6.',
+    if (profile!.role != UserRole.client) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Use a client account to add marketplace products to a cart.',
+            ),
           ),
-        ),
+        );
+      return;
+    }
+
+    try {
+      await _cart.addProduct(
+        clientUid: profile!.uid,
+        productId: product.id,
       );
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: const Text('Added to cart.'),
+            action: SnackBarAction(
+              label: 'View cart',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => CartPage(profile: profile!),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+    } on CartFailure catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Could not add this product to the cart.'),
+          ),
+        );
+    }
   }
 
   String _price(double value) {

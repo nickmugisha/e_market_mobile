@@ -153,6 +153,24 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/products/$(productId));
     }
 
+
+    function validCart(clientUid, data) {
+      return data.keys().hasOnly([
+          'clientId',
+          'sellerId',
+          'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'clientId',
+          'sellerId',
+          'updatedAt'
+        ])
+        && data.clientId == clientUid
+        && data.sellerId is string
+        && data.sellerId.size() > 0
+        && isSellerUid(data.sellerId);
+    }
+
     function validCartItem(productId, data) {
       return data.keys().hasOnly([
           'productId',
@@ -192,7 +210,8 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/products/$(productId)).data.name == data.productName
         && get(/databases/$(database)/documents/products/$(productId)).data.imageRef == data.imageRef
         && get(/databases/$(database)/documents/products/$(productId)).data.price == data.unitPrice
-        && get(/databases/$(database)/documents/products/$(productId)).data.currency == data.currency;
+        && get(/databases/$(database)/documents/products/$(productId)).data.currency == data.currency
+        && data.quantity <= get(/databases/$(database)/documents/products/$(productId)).data.stock;
     }
 
     function validOrder(data) {
@@ -362,7 +381,21 @@ service cloud.firestore {
     }
 
     match /carts/{clientUid} {
-      allow read, write: if false;
+      allow read: if isClient() && request.auth.uid == clientUid;
+
+      allow create: if isClient()
+        && request.auth.uid == clientUid
+        && validCart(clientUid, request.resource.data)
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if isClient()
+        && request.auth.uid == clientUid
+        && validCart(clientUid, request.resource.data)
+        && request.resource.data.clientId == resource.data.clientId
+        && request.resource.data.sellerId == resource.data.sellerId
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if isClient() && request.auth.uid == clientUid;
 
       match /items/{productId} {
         allow read: if isClient() && request.auth.uid == clientUid;
@@ -370,12 +403,18 @@ service cloud.firestore {
         allow create: if isClient()
           && request.auth.uid == clientUid
           && validCartItem(productId, request.resource.data)
+          && getAfter(/databases/$(database)/documents/carts/$(clientUid)).data.clientId == clientUid
+          && getAfter(/databases/$(database)/documents/carts/$(clientUid)).data.sellerId
+            == request.resource.data.sellerId
           && request.resource.data.addedAt == request.time
           && request.resource.data.updatedAt == request.time;
 
         allow update: if isClient()
           && request.auth.uid == clientUid
           && validCartItem(productId, request.resource.data)
+          && getAfter(/databases/$(database)/documents/carts/$(clientUid)).data.clientId == clientUid
+          && getAfter(/databases/$(database)/documents/carts/$(clientUid)).data.sellerId
+            == request.resource.data.sellerId
           && request.resource.data.addedAt == resource.data.addedAt
           && request.resource.data.updatedAt == request.time;
 
