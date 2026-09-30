@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/currency/currency_service.dart';
+import '../../../core/navigation/app_transitions.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../auth/domain/user_profile.dart';
 import '../../catalogue/data/product_repository.dart';
 import '../../catalogue/domain/product.dart';
+import '../../checkout/presentation/checkout_page.dart';
 import '../data/cart_repository.dart';
 import '../domain/cart_item.dart';
 import '../domain/cart_policy.dart';
@@ -377,9 +379,16 @@ class _CartPageState extends State<CartPage> {
                   const SizedBox(height: 12),
                   FilledButton.icon(
                     onPressed: issues.isEmpty
-                        ? () => _showMessage(
-                              'Cart is valid. Checkout arrives in LOT 7.',
-                            )
+                        ? () {
+                            Navigator.of(context).push(
+                              smoothRoute(
+                                CheckoutPage(
+                                  profile: widget.profile,
+                                  initialDisplayCurrency: _displayCurrency,
+                                ),
+                              ),
+                            );
+                          }
                         : null,
                     icon: const Icon(Icons.arrow_forward_rounded),
                     label: const Text('Continue to checkout'),

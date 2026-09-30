@@ -43,6 +43,18 @@ class ProductRepository {
     });
   }
 
+  Future<List<Product>> fetchActiveProductsFromServer() async {
+    final snapshot = await _products
+        .where('active', isEqualTo: true)
+        .get(const GetOptions(source: Source.server));
+
+    final products = snapshot.docs
+        .map((doc) => Product.fromMap(doc.id, doc.data()))
+        .toList();
+    products.sort(_newestFirst);
+    return products;
+  }
+
   Future<String> createProduct({
     required String sellerId,
     required String sellerName,

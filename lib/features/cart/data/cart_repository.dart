@@ -55,6 +55,25 @@ class CartRepository {
     });
   }
 
+  Future<List<CartItem>> fetchItemsFromServer(String clientUid) async {
+    final snapshot =
+        await _items(clientUid).get(const GetOptions(source: Source.server));
+
+    final items = snapshot.docs
+        .map((doc) => CartItem.fromMap(doc.id, doc.data()))
+        .toList();
+
+    items.sort((a, b) {
+      final aDate =
+          a.updatedAt ?? a.addedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate =
+          b.updatedAt ?? b.addedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bDate.compareTo(aDate);
+    });
+
+    return items;
+  }
+
   Future<void> addProduct({
     required String clientUid,
     required String productId,
