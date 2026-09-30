@@ -1,6 +1,7 @@
 package com.example.e_market
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -14,6 +15,7 @@ import kotlin.math.roundToInt
 
 class MainActivity : FlutterActivity() {
     private val channelName = "com.example.e_market/native_image_picker"
+    private val contactChannelName = "com.example.e_market/external_contact"
     private val imageRequestCode = 4701
     private var pendingResult: MethodChannel.Result? = null
 
@@ -28,6 +30,51 @@ class MainActivity : FlutterActivity() {
                 "pickImage" -> openImagePicker(result)
                 else -> result.notImplemented()
             }
+        }
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            contactChannelName,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "openUrl" -> {
+                    val url = call.argument<String>("url")
+                    openExternalUrl(url, result)
+                }
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    private fun openExternalUrl(
+        url: String?,
+        result: MethodChannel.Result,
+    ) {
+        if (url.isNullOrBlank() || !url.startsWith("https://wa.me/")) {
+            result.error(
+                "invalid_url",
+                "Only WhatsApp contact links are supported.",
+                null,
+            )
+            return
+        }
+
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            startActivity(intent)
+            result.success(true)
+        } catch (error: ActivityNotFoundException) {
+            result.error(
+                "no_handler",
+                "No app or browser could open WhatsApp.",
+                null,
+            )
+        } catch (error: Exception) {
+            result.error(
+                "open_failed",
+                error.message ?: "Could not open WhatsApp.",
+                null,
+            )
         }
     }
 

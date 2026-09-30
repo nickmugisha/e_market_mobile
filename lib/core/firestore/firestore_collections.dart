@@ -4,6 +4,7 @@ abstract final class FirestoreCollections {
   static const products = 'products';
   static const carts = 'carts';
   static const orders = 'orders';
+  static const saved = 'saved';
 }
 
 abstract final class FirestoreSubcollections {

@@ -63,8 +63,12 @@ service cloud.firestore {
         && data.name is string
         && data.name.size() > 0
         && data.phone is string
+        && data.phone.size() >= 6
         && data.whatsappNumber is string
-        && (data.role == 'seller' || data.whatsappNumber == '');
+        && (
+          (data.role == 'seller' && data.whatsappNumber.size() >= 8)
+          || (data.role == 'client' && data.whatsappNumber == '')
+        );
     }
 
     function validCategory(data) {
@@ -214,6 +218,21 @@ service cloud.firestore {
         && data.quantity <= get(/databases/$(database)/documents/products/$(productId)).data.stock;
     }
 
+
+    function validSavedProduct(productId, data) {
+      return data.keys().hasOnly([
+          'productId',
+          'addedAt'
+        ])
+        && data.keys().hasAll([
+          'productId',
+          'addedAt'
+        ])
+        && data.productId == productId
+        && productExists(productId)
+        && get(/databases/$(database)/documents/products/$(productId)).data.active == true;
+    }
+
     function validOrder(data) {
       return data.keys().hasOnly([
           'clientId',
@@ -348,8 +367,12 @@ service cloud.firestore {
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.phone is string
+        && request.resource.data.phone.size() >= 6
         && request.resource.data.whatsappNumber is string
-        && (resource.data.role == 'seller' || request.resource.data.whatsappNumber == '')
+        && (
+          (resource.data.role == 'seller' && request.resource.data.whatsappNumber.size() >= 8)
+          || (resource.data.role == 'client' && request.resource.data.whatsappNumber == '')
+        )
         && request.resource.data.updatedAt == request.time;
 
       allow delete: if false;
@@ -375,9 +398,9 @@ service cloud.firestore {
         && validProduct(request.resource.data)
         && request.resource.data.sellerId == request.auth.uid
         && request.resource.data.sellerName
-          == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.name
+          == getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.name
         && request.resource.data.sellerWhatsapp
-          == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.whatsappNumber
+          == getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.whatsappNumber
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time;
 
@@ -385,9 +408,9 @@ service cloud.firestore {
         && resource.data.sellerId == request.auth.uid
         && request.resource.data.sellerId == resource.data.sellerId
         && request.resource.data.sellerName
-          == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.name
+          == getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.name
         && request.resource.data.sellerWhatsapp
-          == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.whatsappNumber
+          == getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.whatsappNumber
         && request.resource.data.createdAt == resource.data.createdAt
         && validProduct(request.resource.data)
         && request.resource.data.updatedAt == request.time;
@@ -433,6 +456,24 @@ service cloud.firestore {
             == request.resource.data.sellerId
           && request.resource.data.addedAt == resource.data.addedAt
           && request.resource.data.updatedAt == request.time;
+
+        allow delete: if isClient() && request.auth.uid == clientUid;
+      }
+    }
+
+
+    match /saved/{clientUid} {
+      allow read, write: if false;
+
+      match /items/{productId} {
+        allow read: if isClient() && request.auth.uid == clientUid;
+
+        allow create: if isClient()
+          && request.auth.uid == clientUid
+          && validSavedProduct(productId, request.resource.data)
+          && request.resource.data.addedAt == request.time;
+
+        allow update: if false;
 
         allow delete: if isClient() && request.auth.uid == clientUid;
       }

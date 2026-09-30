@@ -14,6 +14,8 @@ import '../../catalogue/presentation/catalogue_page.dart';
 import '../../catalogue/presentation/product_detail_page.dart';
 import '../../catalogue/presentation/widgets/catalogue_product_card.dart';
 import '../../orders/presentation/order_history_page.dart';
+import '../../profile/presentation/edit_profile_page.dart';
+import '../../saved/presentation/saved_products_page.dart';
 import '../../seller/presentation/seller_dashboard_page.dart';
 import 'widgets/featured_card.dart';
 
@@ -74,17 +76,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _protectedAction(String authenticatedMessage) {
-    if (widget.isVisitor) {
-      _openAuthentication();
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(authenticatedMessage)),
-    );
-  }
-
   Future<void> _showProfile() async {
     if (widget.isVisitor) {
       await _openAuthentication();
@@ -122,6 +113,18 @@ class _HomePageState extends State<HomePage> {
                 _ProfileLine(
                   icon: Icons.phone_outlined,
                   label: profile.phone,
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _openEditProfile();
+                    },
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Edit profile'),
+                  ),
                 ),
                 if (profile.role == UserRole.client) ...[
                   const SizedBox(height: 18),
@@ -173,6 +176,38 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _openEditProfile() async {
+    final profile = widget.profile;
+    if (profile == null) return;
+
+    await Navigator.of(context).push(
+      smoothRoute(EditProfilePage(profile: profile)),
+    );
+  }
+
+  Future<void> _openSaved() async {
+    final profile = widget.profile;
+
+    if (profile == null) {
+      await _openAuthentication();
+      return;
+    }
+
+    if (profile.role != UserRole.client) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Saved products are available to client accounts.'),
+        ),
+      );
+      return;
+    }
+
+    await Navigator.of(context).push(
+      smoothRoute(SavedProductsPage(profile: profile)),
     );
   }
 
@@ -242,7 +277,7 @@ class _HomePageState extends State<HomePage> {
       return;
     }
     if (index == 2) {
-      _protectedAction('Saved products arrive in LOT 9.');
+      _openSaved();
       return;
     }
     if (index == 3) {

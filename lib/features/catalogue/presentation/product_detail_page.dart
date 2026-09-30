@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/services/external_contact_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../auth/domain/user_profile.dart';
 import '../../cart/data/cart_repository.dart';
 import '../../cart/presentation/cart_page.dart';
+import '../../saved/data/saved_product_repository.dart';
 import '../data/product_repository.dart';
 import '../domain/product.dart';
 
@@ -24,6 +26,8 @@ class ProductDetailPage extends StatelessWidget {
 
   final ProductRepository _products = ProductRepository();
   final CartRepository _cart = CartRepository();
+  final SavedProductRepository _saved = SavedProductRepository();
+  final ExternalContactService _contact = const ExternalContactService();
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +47,14 @@ class ProductDetailPage extends StatelessWidget {
             backgroundColor: Colors.white,
             surfaceTintColor: Colors.white,
             title: const Text('Product details'),
+            actions: [
+              _SavedAction(
+                profile: profile,
+                product: product,
+                repository: _saved,
+                onSignInRequested: onSignInRequested,
+              ),
+            ],
           ),
           body: ListView(
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 120),
@@ -125,7 +137,12 @@ class ProductDetailPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              _SellerCard(product: product),
+              _SellerCard(
+                product: product,
+                onWhatsApp: product.sellerWhatsapp.trim().isEmpty
+                    ? null
+                    : () => _openSellerWhatsApp(context, product),
+              ),
             ],
           ),
           bottomNavigationBar: SafeArea(
@@ -221,6 +238,31 @@ class ProductDetailPage extends StatelessWidget {
     }
   }
 
+  Future<void> _openSellerWhatsApp(
+    BuildContext context,
+    Product product,
+  ) async {
+    try {
+      await _contact.openWhatsApp(
+        phone: product.sellerWhatsapp,
+        message:
+            'Hello ${product.displaySellerName}, I am interested in "${product.name}" on e-market.',
+      );
+    } on FormatException {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('The seller WhatsApp number is invalid.'),
+        ),
+      );
+    } on ExternalContactFailure catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    }
+  }
+
   String _price(double value) {
     return value == value.roundToDouble()
         ? value.toInt().toString()
@@ -229,9 +271,13 @@ class ProductDetailPage extends StatelessWidget {
 }
 
 class _SellerCard extends StatelessWidget {
-  const _SellerCard({required this.product});
+  const _SellerCard({
+    required this.product,
+    required this.onWhatsApp,
+  });
 
   final Product product;
+  final VoidCallback? onWhatsApp;
 
   @override
   Widget build(BuildContext context) {
@@ -292,8 +338,88 @@ class _SellerCard extends StatelessWidget {
               ],
             ),
           ),
+          if (onWhatsApp != null) ...[
+            const SizedBox(width: 8),
+            IconButton.filledTonal(
+              tooltip: 'Contact seller on WhatsApp',
+              onPressed: onWhatsApp,
+              icon: const Icon(Icons.chat_rounded),
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+
+class _SavedAction extends StatelessWidget {
+  const _SavedAction({
+    required this.profile,
+    required this.product,
+    required this.repository,
+    required this.onSignInRequested,
+  });
+
+  final UserProfile? profile;
+  final Product product;
+  final SavedProductRepository repository;
+  final Future<void> Function()? onSignInRequested;
+
+  @override
+  Widget build(BuildContext context) {
+    final currentProfile = profile;
+
+    if (currentProfile == null) {
+      return IconButton(
+        tooltip: 'Save product',
+        onPressed: () async {
+          if (onSignInRequested != null) {
+            await onSignInRequested!();
+          }
+        },
+        icon: const Icon(Icons.favorite_border_rounded),
+      );
+    }
+
+    if (currentProfile.role != UserRole.client) {
+      return const SizedBox.shrink();
+    }
+
+    return StreamBuilder<bool>(
+      stream: repository.watchSaved(
+        clientUid: currentProfile.uid,
+        productId: product.id,
+      ),
+      builder: (context, snapshot) {
+        final saved = snapshot.data ?? false;
+
+        return IconButton(
+          tooltip: saved ? 'Remove from saved' : 'Save product',
+          onPressed: () async {
+            try {
+              await repository.toggle(
+                clientUid: currentProfile.uid,
+                productId: product.id,
+                currentlySaved: saved,
+              );
+            } catch (_) {
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Could not update saved products.'),
+                ),
+              );
+            }
+          },
+          icon: Icon(
+            saved
+                ? Icons.favorite_rounded
+                : Icons.favorite_border_rounded,
+            color: saved ? AppColors.accent : null,
+          ),
+        );
+      },
     );
   }
 }
