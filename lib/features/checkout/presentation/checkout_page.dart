@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/currency/currency_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/product_image.dart';
 import '../../auth/domain/user_profile.dart';
 import '../../cart/data/cart_repository.dart';
 import '../../catalogue/data/product_repository.dart';
@@ -139,6 +140,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     if (draft == null || paymentResult == null || _placingOrder) return;
 
+    if (draft.paymentStatus == PaymentStatus.failed) {
+      _showMessage(
+        'Payment failed. Choose another payment method and review the order again.',
+      );
+      return;
+    }
+
     setState(() => _placingOrder = true);
 
     try {
@@ -151,10 +159,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => OrderDetailPage(
-            orderId: orderId,
-            profile: widget.profile,
-          ),
+          builder: (_) =>
+              OrderDetailPage(orderId: orderId, profile: widget.profile),
         ),
       );
     } on OrderFailure catch (error) {
@@ -190,7 +196,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ...errors.map(
               (error) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
-                child: Text('• $error'),
+                child: Text('â€¢ $error'),
               ),
             ),
           ],
@@ -293,7 +299,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             const SizedBox(height: 14),
             _SectionCard(
               title: 'Payment',
-              subtitle: 'No real money is charged in this exam project.',
+              subtitle: 'Choose your preferred payment method.',
               child: Column(
                 children: [
                   _SelectionTile(
@@ -331,8 +337,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             const SizedBox(height: 14),
             _SectionCard(
               title: 'Checkout currency',
-              subtitle:
-                  'The display total uses the fixed BIF-based conversion from LOT 6.',
+              subtitle: 'Choose the currency used for your order summary.',
               child: DropdownButtonFormField<MarketCurrency>(
                 initialValue: _displayCurrency,
                 items: MarketCurrency.values
@@ -386,10 +391,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
               : const Icon(Icons.verified_outlined),
           label: Text(
             _processing
-                ? 'Checking cart & payment...'
+                ? 'Reviewing order...'
                 : _readyDraft == null
-                    ? 'Review & simulate payment'
-                    : 'Run checkout check again',
+                ? 'Review order'
+                : 'Update order review',
           ),
         ),
       ),
@@ -450,10 +455,7 @@ class _CheckoutHeader extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   profile.phone,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
             ),
@@ -489,10 +491,7 @@ class _SectionCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 3),
           Text(
@@ -544,10 +543,7 @@ class _SelectionTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(
-                icon,
-                color: selected ? AppColors.accent : AppColors.muted,
-              ),
+              Icon(icon, color: selected ? AppColors.accent : AppColors.muted),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -555,9 +551,7 @@ class _SelectionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.w900),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -572,9 +566,7 @@ class _SelectionTile extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Icon(
-                selected
-                    ? Icons.check_circle_rounded
-                    : Icons.circle_outlined,
+                selected ? Icons.check_circle_rounded : Icons.circle_outlined,
                 color: selected ? AppColors.accent : AppColors.muted,
               ),
             ],
@@ -603,84 +595,384 @@ class _ReadyForOrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final paid = draft.paymentStatus == PaymentStatus.paid;
+    final failed = draft.paymentStatus == PaymentStatus.failed;
+
+    final totalQuantity = draft.items.fold<int>(
+      0,
+      (sum, item) => sum + item.quantity,
+    );
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.accentSoft,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: AppColors.accent),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: AppColors.line),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 24,
+            offset: Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                paid ? Icons.check_circle_rounded : Icons.schedule_rounded,
-                color: AppColors.accent,
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.accentSoft,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.shopping_bag_outlined,
+                  color: AppColors.accent,
+                ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Review your order',
+                      style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '$totalQuantity item${totalQuantity == 1 ? '' : 's'} ready for checkout',
+                      style: const TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.canvas,
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 child: Text(
-                  paid ? 'Simulated payment approved' : 'Cash payment pending',
+                  '${draft.items.length} product${draft.items.length == 1 ? '' : 's'}',
                   style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
             ],
           ),
+
+          const SizedBox(height: 18),
+
+          ...draft.items.map((item) {
+            final displayUnitPrice = currencyService.convert(
+              amount: item.unitPrice,
+              from: item.currency,
+              to: draft.displayCurrency,
+            );
+
+            final displaySubtotal = currencyService.convert(
+              amount: item.subtotal,
+              from: item.currency,
+              to: draft.displayCurrency,
+            );
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.canvas,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.line),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    ProductImage(
+                      imageRef: item.imageRef,
+                      width: 74,
+                      height: 74,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.productName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: AppColors.line),
+                                ),
+                                child: Text(
+                                  'Qty ${item.quantity}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '${currencyService.format(amount: displayUnitPrice, currency: draft.displayCurrency)} each',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppColors.muted,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          currencyService.format(
+                            amount: displaySubtotal,
+                            currency: draft.displayCurrency,
+                          ),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        const Text(
+                          'Subtotal',
+                          style: TextStyle(
+                            color: AppColors.muted,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+
           const SizedBox(height: 8),
-          Text(
-            paymentResult.message,
-            style: const TextStyle(
-              color: AppColors.muted,
-              height: 1.4,
-            ),
+          const Divider(height: 1),
+          const SizedBox(height: 18),
+
+          const Text(
+            'Delivery & payment',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
           ),
-          const SizedBox(height: 12),
-          _SummaryLine(
-            label: 'Items',
-            value: '${draft.items.length}',
-          ),
+
+          const SizedBox(height: 6),
+
           _SummaryLine(
             label: 'Fulfillment',
             value: draft.fulfillmentType == FulfillmentType.delivery
                 ? 'Delivery'
                 : 'Pickup',
           ),
+
+          if (draft.fulfillmentType == FulfillmentType.delivery &&
+              draft.deliveryAddress.isNotEmpty)
+            _SummaryLine(label: 'Address', value: draft.deliveryAddress),
+
           _SummaryLine(
             label: 'Payment',
             value: _paymentLabel(draft.paymentMethod),
           ),
+
           _SummaryLine(
-            label: 'Simulation ref.',
-            value: paymentResult.reference,
+            label: 'Payment status',
+            value: paid ? 'Approved' : 'Pending',
           ),
+
+          const SizedBox(height: 18),
+          const Divider(height: 1),
+          const SizedBox(height: 18),
+
           _SummaryLine(
-            label: 'Display total',
+            label: 'Subtotal',
             value: currencyService.format(
-              amount: draft.displayTotal,
+              amount: draft.displaySubtotal,
               currency: draft.displayCurrency,
             ),
           ),
-          const SizedBox(height: 12),
-          const Text(
-            'Placing the order creates a real Firestore order and clears the cart. Stock is reserved when the seller confirms the order.',
-            style: TextStyle(
-              color: AppColors.ink,
-              fontSize: 12,
-              height: 1.45,
-              fontWeight: FontWeight.w700,
+          _SummaryLine(
+            label: 'Delivery fee',
+            value: draft.deliveryFee == 0
+                ? 'Free'
+                : currencyService.format(
+                    amount: draft.deliveryFee,
+                    currency: draft.displayCurrency,
+                  ),
+          ),
+
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Order total',
+                      style: TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Including all items',
+                      style: TextStyle(color: AppColors.muted, fontSize: 10),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                currencyService.format(
+                  amount: draft.displayTotal,
+                  currency: draft.displayCurrency,
+                ),
+                style: const TextStyle(
+                  color: AppColors.ink,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.accentSoft,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  failed
+                      ? Icons.error_outline_rounded
+                      : paid
+                      ? Icons.verified_rounded
+                      : Icons.schedule_rounded,
+                  color: AppColors.accent,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        failed
+                            ? 'Payment failed'
+                            : paid
+                            ? 'Payment approved'
+                            : 'Cash payment pending',
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        paymentResult.message,
+                        style: const TextStyle(
+                          color: AppColors.muted,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Reference: ${paymentResult.reference}',
+                        style: const TextStyle(
+                          color: AppColors.muted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
+
           const SizedBox(height: 14),
+
+          const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                size: 17,
+                color: AppColors.muted,
+              ),
+              SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  'Your order will be sent to the seller after you place it. Stock is reserved when the seller confirms the order.',
+                  style: TextStyle(
+                    color: AppColors.muted,
+                    fontSize: 11,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: placingOrder ? null : onPlaceOrder,
+              onPressed:
+                  placingOrder || draft.paymentStatus == PaymentStatus.failed
+                  ? null
+                  : onPlaceOrder,
               icon: placingOrder
                   ? const SizedBox.square(
                       dimension: 17,
@@ -689,10 +981,8 @@ class _ReadyForOrderCard extends StatelessWidget {
                         color: Colors.white,
                       ),
                     )
-                  : const Icon(Icons.receipt_long_rounded),
-              label: Text(
-                placingOrder ? 'Placing order...' : 'Place order',
-              ),
+                  : const Icon(Icons.lock_outline_rounded),
+              label: Text(placingOrder ? 'Placing order...' : 'Place order'),
             ),
           ),
         ],
@@ -710,10 +1000,7 @@ class _ReadyForOrderCard extends StatelessWidget {
 }
 
 class _SummaryLine extends StatelessWidget {
-  const _SummaryLine({
-    required this.label,
-    required this.value,
-  });
+  const _SummaryLine({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -727,10 +1014,7 @@ class _SummaryLine extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                color: AppColors.muted,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: AppColors.muted, fontSize: 12),
             ),
           ),
           const SizedBox(width: 12),
@@ -738,10 +1022,7 @@ class _SummaryLine extends StatelessWidget {
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
             ),
           ),
         ],

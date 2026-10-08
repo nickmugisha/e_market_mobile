@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-
+import '../../../core/services/external_contact_service.dart';
+import '../../catalogue/data/product_repository.dart';
+import '../../catalogue/domain/product.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../auth/domain/user_profile.dart';
@@ -24,7 +26,11 @@ class OrderDetailPage extends StatefulWidget {
 
 class _OrderDetailPageState extends State<OrderDetailPage> {
   final _orders = OrderRepository();
+  final _products = ProductRepository();
+  final _contact = const ExternalContactService();
+
   bool _updating = false;
+  bool _openingWhatsApp = false;
 
   Future<void> _transition(OrderStatus target) async {
     if (_updating) return;
@@ -73,6 +79,103 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     }
   }
 
+  Future<void> _sendOrderWhatsApp(
+    MarketOrder order,
+    List<OrderItem> items,
+  ) async {
+    if (_openingWhatsApp) return;
+
+    if (items.isEmpty) {
+      _showMessage('The order has no items to send.');
+      return;
+    }
+
+    setState(() => _openingWhatsApp = true);
+
+    try {
+      final activeProducts = await _products.fetchActiveProductsFromServer();
+
+      Product? contactProduct;
+
+      for (final product in activeProducts) {
+        if (product.id == items.first.productId &&
+            product.sellerWhatsapp.trim().isNotEmpty) {
+          contactProduct = product;
+          break;
+        }
+      }
+
+      if (contactProduct == null) {
+        for (final product in activeProducts) {
+          if (product.sellerId == order.sellerId &&
+              product.sellerWhatsapp.trim().isNotEmpty) {
+            contactProduct = product;
+            break;
+          }
+        }
+      }
+
+      if (contactProduct == null) {
+        _showMessage('The seller WhatsApp number is unavailable.');
+        return;
+      }
+
+      await _contact.openWhatsApp(
+        phone: contactProduct.sellerWhatsapp,
+        message: _buildWhatsAppMessage(order, items),
+      );
+    } on FormatException {
+      _showMessage('The seller WhatsApp number is invalid.');
+    } on ExternalContactFailure catch (error) {
+      _showMessage(error.message);
+    } catch (_) {
+      _showMessage('Could not prepare the WhatsApp order message.');
+    } finally {
+      if (mounted) {
+        setState(() => _openingWhatsApp = false);
+      }
+    }
+  }
+
+  String _buildWhatsAppMessage(MarketOrder order, List<OrderItem> items) {
+    final message = StringBuffer()
+      ..writeln('NEW ORDER')
+      ..writeln()
+      ..writeln('Order ID: ${order.id}')
+      ..writeln('Client: ${order.clientName}')
+      ..writeln('Phone: ${order.clientPhone}')
+      ..writeln()
+      ..writeln('Products:');
+
+    for (final item in items) {
+      message.writeln('- ${item.productName} x ${item.quantity}');
+    }
+
+    message
+      ..writeln()
+      ..writeln('Subtotal: ${_orderAmount(order, order.subtotal)}')
+      ..writeln('Delivery: ${_orderAmount(order, order.deliveryFee)}')
+      ..writeln('Total: ${_orderAmount(order, order.total)}')
+      ..writeln('Delivery option: ${order.fulfillmentType.label}');
+
+    if (order.fulfillmentType == FulfillmentType.delivery) {
+      message.writeln('Location: ${order.deliveryAddress}');
+    }
+
+    message
+      ..writeln('Payment: ${order.paymentMethod.label}')
+      ..writeln('Payment status: ${order.paymentStatus.label}');
+
+    return message.toString().trim();
+  }
+
+  String _orderAmount(MarketOrder order, double amount) {
+    final decimals = order.currency.code == 'BIF' ? 0 : 2;
+
+    return '${order.currency.code} '
+        '${amount.toStringAsFixed(decimals)}';
+  }
+
   void _showMessage(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -118,14 +221,10 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                   const SizedBox(height: 18),
                   const Text(
                     'Items',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
                   ),
                   const SizedBox(height: 10),
-                  if (itemSnapshot.connectionState ==
-                          ConnectionState.waiting &&
+                  if (itemSnapshot.connectionState == ConnectionState.waiting &&
                       !itemSnapshot.hasData)
                     const Center(child: CircularProgressIndicator())
                   else if (itemSnapshot.hasError)
@@ -140,6 +239,32 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                         child: _OrderItemCard(item: item),
                       ),
                     ),
+
+                  if (!sellerMode && items.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _openingWhatsApp
+                            ? null
+                            : () => _sendOrderWhatsApp(order, items),
+                        icon: _openingWhatsApp
+                            ? const SizedBox.square(
+                                dimension: 17,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.chat_rounded),
+                        label: Text(
+                          _openingWhatsApp
+                              ? 'Opening WhatsApp...'
+                              : 'Send Order via WhatsApp',
+                        ),
+                      ),
+                    ),
+                  ],
                   if (sellerMode) ...[
                     const SizedBox(height: 12),
                     _SellerActions(
@@ -151,8 +276,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                         message:
                             'Current product stock will be checked again and reserved by decreasing stock.',
                       ),
-                      onPrepare: () =>
-                          _transition(OrderStatus.preparing),
+                      onPrepare: () => _transition(OrderStatus.preparing),
                       onReady: () => _transition(OrderStatus.ready),
                       onComplete: () => _confirmTransition(
                         target: OrderStatus.completed,
@@ -229,10 +353,7 @@ class _OrderHeader extends StatelessWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 7,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
               color: AppColors.accent.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(999),
@@ -276,32 +397,13 @@ class _InfoCard extends StatelessWidget {
         children: [
           _InfoLine(label: 'Client', value: order.clientName),
           _InfoLine(label: 'Phone', value: order.clientPhone),
-          _InfoLine(
-            label: 'Fulfillment',
-            value: order.fulfillmentType.label,
-          ),
+          _InfoLine(label: 'Fulfillment', value: order.fulfillmentType.label),
           if (order.fulfillmentType == FulfillmentType.delivery)
-            _InfoLine(
-              label: 'Address',
-              value: order.deliveryAddress,
-            ),
-          _InfoLine(
-            label: 'Payment',
-            value: order.paymentMethod.label,
-          ),
-          _InfoLine(
-            label: 'Payment status',
-            value: order.paymentStatus.label,
-          ),
-          _InfoLine(
-            label: 'Payment ref.',
-            value: order.paymentReference,
-          ),
-          _InfoLine(
-            label: 'Items',
-            value: '${order.itemCount}',
-            last: true,
-          ),
+            _InfoLine(label: 'Address', value: order.deliveryAddress),
+          _InfoLine(label: 'Payment', value: order.paymentMethod.label),
+          _InfoLine(label: 'Payment status', value: order.paymentStatus.label),
+          _InfoLine(label: 'Payment ref.', value: order.paymentReference),
+          _InfoLine(label: 'Items', value: '${order.itemCount}', last: true),
         ],
       ),
     );
@@ -330,20 +432,14 @@ class _InfoLine extends StatelessWidget {
             width: 110,
             child: Text(
               label,
-              style: const TextStyle(
-                color: AppColors.muted,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: AppColors.muted, fontSize: 12),
             ),
           ),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-              ),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
             ),
           ),
         ],
@@ -383,17 +479,12 @@ class _OrderItemCard extends StatelessWidget {
                   item.productName,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${item.quantity} × ${item.currency.code} ${_price(item.unitPrice)}',
-                  style: const TextStyle(
-                    color: AppColors.muted,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
                 ),
                 const SizedBox(height: 5),
                 Text(
@@ -469,8 +560,8 @@ class _SellerActions extends StatelessWidget {
         break;
     }
 
-    final canCancel = status != OrderStatus.completed &&
-        status != OrderStatus.cancelled;
+    final canCancel =
+        status != OrderStatus.completed && status != OrderStatus.cancelled;
 
     if (primaryAction == null && !canCancel) {
       return const SizedBox.shrink();
@@ -488,10 +579,7 @@ class _SellerActions extends StatelessWidget {
         children: [
           const Text(
             'Seller actions',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 12),
           if (primaryAction != null)
@@ -539,10 +627,7 @@ class _OrderUnavailable extends StatelessWidget {
           child: Text(
             'This order is unavailable or you do not have permission to view it.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.muted,
-              fontSize: 16,
-            ),
+            style: TextStyle(color: AppColors.muted, fontSize: 16),
           ),
         ),
       ),

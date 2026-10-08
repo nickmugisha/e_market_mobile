@@ -2,6 +2,7 @@ import '../../auth/domain/user_profile.dart';
 import '../../cart/domain/cart_item.dart';
 import '../../catalogue/domain/product.dart';
 import '../../orders/domain/order_models.dart';
+import '../../orders/domain/order_policy.dart';
 
 class CheckoutDraft {
   const CheckoutDraft({
@@ -15,6 +16,8 @@ class CheckoutDraft {
     required this.paymentMethod,
     required this.paymentStatus,
     required this.displayCurrency,
+    required this.displaySubtotal,
+    required this.deliveryFee,
     required this.displayTotal,
   });
 
@@ -28,6 +31,9 @@ class CheckoutDraft {
   final PaymentMethod paymentMethod;
   final PaymentStatus paymentStatus;
   final MarketCurrency displayCurrency;
+
+  final double displaySubtotal;
+  final double deliveryFee;
   final double displayTotal;
 
   factory CheckoutDraft.fromValidatedCart({
@@ -44,6 +50,11 @@ class CheckoutDraft {
       throw ArgumentError('A checkout draft needs at least one cart item.');
     }
 
+    final deliveryFee = OrderPolicy.deliveryFee(
+      fulfillmentType: fulfillmentType,
+      displayCurrency: displayCurrency,
+    );
+
     return CheckoutDraft(
       clientId: profile.uid,
       clientName: profile.name.trim(),
@@ -57,7 +68,15 @@ class CheckoutDraft {
       paymentMethod: paymentMethod,
       paymentStatus: paymentStatus,
       displayCurrency: displayCurrency,
-      displayTotal: displayTotal,
+
+      // The existing checkout calculation currently represents
+      // the products subtotal.
+      displaySubtotal: displayTotal,
+
+      deliveryFee: deliveryFee,
+
+      // Final amount = products + delivery.
+      displayTotal: displayTotal + deliveryFee,
     );
   }
 }

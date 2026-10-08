@@ -4,6 +4,8 @@ import '../../catalogue/domain/product.dart';
 import 'order_models.dart';
 
 abstract final class OrderPolicy {
+  static const double deliveryFeeBif = 5000;
+
   static bool canTransition(OrderStatus from, OrderStatus to) {
     if (from == to) return true;
 
@@ -20,23 +22,19 @@ abstract final class OrderPolicy {
     };
   }
 
-  static bool shouldReserveStock(
-    OrderStatus from,
-    OrderStatus to,
-  ) {
+  static bool shouldReserveStock(OrderStatus from, OrderStatus to) {
     return from == OrderStatus.pending && to == OrderStatus.confirmed;
   }
 
-  static bool shouldRestoreStock(
-    OrderStatus from,
-    OrderStatus to,
-  ) {
+  static bool shouldRestoreStock(OrderStatus from, OrderStatus to) {
     return to == OrderStatus.cancelled &&
         (from == OrderStatus.confirmed ||
             from == OrderStatus.preparing ||
             from == OrderStatus.ready);
   }
 
+  /// Existing calculation kept for compatibility.
+  /// This represents the products subtotal only.
   static double displayTotal({
     required List<CartItem> items,
     required MarketCurrency displayCurrency,
@@ -52,5 +50,54 @@ abstract final class OrderPolicy {
             to: displayCurrency,
           ),
     );
+  }
+
+  static double displaySubtotal({
+    required List<CartItem> items,
+    required MarketCurrency displayCurrency,
+    CurrencyService currencyService = const CurrencyService(),
+  }) {
+    return displayTotal(
+      items: items,
+      displayCurrency: displayCurrency,
+      currencyService: currencyService,
+    );
+  }
+
+  static double deliveryFee({
+    required FulfillmentType fulfillmentType,
+    required MarketCurrency displayCurrency,
+    CurrencyService currencyService = const CurrencyService(),
+  }) {
+    if (fulfillmentType == FulfillmentType.pickup) {
+      return 0;
+    }
+
+    return currencyService.convert(
+      amount: deliveryFeeBif,
+      from: MarketCurrency.bif,
+      to: displayCurrency,
+    );
+  }
+
+  static double checkoutTotal({
+    required List<CartItem> items,
+    required FulfillmentType fulfillmentType,
+    required MarketCurrency displayCurrency,
+    CurrencyService currencyService = const CurrencyService(),
+  }) {
+    final subtotal = displaySubtotal(
+      items: items,
+      displayCurrency: displayCurrency,
+      currencyService: currencyService,
+    );
+
+    final fee = deliveryFee(
+      fulfillmentType: fulfillmentType,
+      displayCurrency: displayCurrency,
+      currencyService: currencyService,
+    );
+
+    return subtotal + fee;
   }
 }

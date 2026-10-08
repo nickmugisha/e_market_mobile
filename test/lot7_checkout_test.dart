@@ -39,10 +39,7 @@ void main() {
     );
 
     expect(result.isValid, isFalse);
-    expect(
-      result.errors,
-      contains('Enter a complete delivery address.'),
-    );
+    expect(result.errors, contains('Enter a complete delivery address.'));
   });
 
   test('pickup checkout does not require an address', () {
@@ -94,13 +91,14 @@ void main() {
     expect(result.reference, startsWith('SIM-'));
   });
 
-  test('simulated digital payments are marked paid', () async {
+  test('simulated digital payments cover success and failure', () async {
     const simulator = PaymentSimulator();
 
     final mobile = await simulator.process(PaymentMethod.mobileMoney);
     final card = await simulator.process(PaymentMethod.card);
 
     expect(mobile.status, PaymentStatus.paid);
-    expect(card.status, PaymentStatus.paid);
+    expect(card.status, PaymentStatus.failed);
+    expect(card.message, contains('failed'));
   });
 }

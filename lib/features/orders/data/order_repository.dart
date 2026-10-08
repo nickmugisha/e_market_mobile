@@ -19,7 +19,7 @@ class OrderFailure implements Exception {
 
 class OrderRepository {
   OrderRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
   final CurrencyService _currencyService = const CurrencyService();
@@ -31,9 +31,7 @@ class OrderRepository {
       _firestore.collection(FirestoreCollections.products);
 
   DocumentReference<Map<String, dynamic>> _cart(String clientId) {
-    return _firestore
-        .collection(FirestoreCollections.carts)
-        .doc(clientId);
+    return _firestore.collection(FirestoreCollections.carts).doc(clientId);
   }
 
   CollectionReference<Map<String, dynamic>> _cartItems(String clientId) {
@@ -41,10 +39,9 @@ class OrderRepository {
   }
 
   Stream<List<MarketOrder>> watchClientOrders(String clientId) {
-    return _orders
-        .where('clientId', isEqualTo: clientId)
-        .snapshots()
-        .map((snapshot) {
+    return _orders.where('clientId', isEqualTo: clientId).snapshots().map((
+      snapshot,
+    ) {
       final orders = snapshot.docs
           .map((doc) => MarketOrder.fromMap(doc.id, doc.data()))
           .toList();
@@ -54,10 +51,9 @@ class OrderRepository {
   }
 
   Stream<List<MarketOrder>> watchSellerOrders(String sellerId) {
-    return _orders
-        .where('sellerId', isEqualTo: sellerId)
-        .snapshots()
-        .map((snapshot) {
+    return _orders.where('sellerId', isEqualTo: sellerId).snapshots().map((
+      snapshot,
+    ) {
       final orders = snapshot.docs
           .map((doc) => MarketOrder.fromMap(doc.id, doc.data()))
           .toList();
@@ -80,12 +76,12 @@ class OrderRepository {
         .collection(FirestoreSubcollections.items)
         .snapshots()
         .map((snapshot) {
-      final items = snapshot.docs
-          .map((doc) => OrderItem.fromMap(doc.id, doc.data()))
-          .toList();
-      items.sort((a, b) => a.productName.compareTo(b.productName));
-      return items;
-    });
+          final items = snapshot.docs
+              .map((doc) => OrderItem.fromMap(doc.id, doc.data()))
+              .toList();
+          items.sort((a, b) => a.productName.compareTo(b.productName));
+          return items;
+        });
   }
 
   Future<String> placeOrder({
@@ -143,14 +139,8 @@ class OrderRepository {
           );
         }
 
-        final cartItem = CartItem.fromMap(
-          cartItemSnapshot.id,
-          cartItemData,
-        );
-        final product = Product.fromMap(
-          productSnapshot.id,
-          productData,
-        );
+        final cartItem = CartItem.fromMap(cartItemSnapshot.id, cartItemData);
+        final product = Product.fromMap(productSnapshot.id, productData);
 
         if (cartItem.sellerId != draft.sellerId ||
             product.sellerId != draft.sellerId) {
@@ -184,11 +174,19 @@ class OrderRepository {
         liveProducts[product.id] = product;
       }
 
-      final displayTotal = OrderPolicy.displayTotal(
+      final displaySubtotal = OrderPolicy.displaySubtotal(
         items: liveItems,
         displayCurrency: draft.displayCurrency,
         currencyService: _currencyService,
       );
+
+      final deliveryFee = OrderPolicy.deliveryFee(
+        fulfillmentType: draft.fulfillmentType,
+        displayCurrency: draft.displayCurrency,
+        currencyService: _currencyService,
+      );
+
+      final displayTotal = displaySubtotal + deliveryFee;
 
       transaction.set(orderRef, {
         'clientId': draft.clientId,
@@ -201,6 +199,8 @@ class OrderRepository {
         'paymentStatus': draft.paymentStatus.name,
         'paymentReference': paymentReference.trim(),
         'currency': draft.displayCurrency.code,
+        'subtotal': displaySubtotal,
+        'deliveryFee': deliveryFee,
         'total': displayTotal,
         'itemCount': liveItems.length,
         'deliveryAddress': draft.deliveryAddress,
@@ -225,9 +225,7 @@ class OrderRepository {
           'currency': product.currency.code,
         });
 
-        transaction.delete(
-          _cartItems(draft.clientId).doc(item.productId),
-        );
+        transaction.delete(_cartItems(draft.clientId).doc(item.productId));
       }
 
       transaction.delete(cartRef);
@@ -294,9 +292,7 @@ class OrderRepository {
           final data = snapshot.data();
 
           if (!snapshot.exists || data == null) {
-            throw OrderFailure(
-              '${item.productName} no longer exists.',
-            );
+            throw OrderFailure('${item.productName} no longer exists.');
           }
 
           final product = Product.fromMap(snapshot.id, data);

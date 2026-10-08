@@ -245,6 +245,8 @@ service cloud.firestore {
           'paymentStatus',
           'paymentReference',
           'currency',
+          'subtotal',
+          'deliveryFee',
           'total',
           'itemCount',
           'deliveryAddress',
@@ -262,6 +264,8 @@ service cloud.firestore {
           'paymentStatus',
           'paymentReference',
           'currency',
+          'subtotal',
+          'deliveryFee',
           'total',
           'itemCount',
           'deliveryAddress',
@@ -273,20 +277,43 @@ service cloud.firestore {
         && data.clientName is string
         && data.clientName.size() > 0
         && data.clientPhone is string
-        && data.status in ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled']
+        && data.status in [
+          'pending',
+          'confirmed',
+          'preparing',
+          'ready',
+          'completed',
+          'cancelled'
+        ]
         && data.fulfillmentType in ['delivery', 'pickup']
         && data.paymentMethod in ['cash', 'mobile_money', 'card']
         && data.paymentStatus in ['pending', 'paid', 'failed']
         && data.paymentReference is string
         && data.paymentReference.size() > 0
         && validCurrency(data.currency)
+        && data.subtotal is number
+        && data.subtotal >= 0
+        && data.deliveryFee is number
+        && data.deliveryFee >= 0
         && data.total is number
-        && data.total >= 0
+        && data.total == data.subtotal + data.deliveryFee
         && data.itemCount is int
         && data.itemCount > 0
         && data.itemCount <= 99
         && data.deliveryAddress is string
-        && (data.fulfillmentType == 'pickup' || data.deliveryAddress.size() > 0);
+        && (
+          (
+            data.fulfillmentType == 'pickup'
+            && data.deliveryAddress == ''
+            && data.deliveryFee == 0
+          )
+          ||
+          (
+            data.fulfillmentType == 'delivery'
+            && data.deliveryAddress.size() > 0
+            && data.deliveryFee > 0
+          )
+        );
     }
 
     function canReadOrderData(data) {
@@ -535,3 +562,4 @@ service cloud.firestore {
     }
   }
 }
+

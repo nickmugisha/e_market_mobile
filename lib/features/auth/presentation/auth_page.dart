@@ -316,7 +316,7 @@ class _Header extends StatelessWidget {
                 duration: const Duration(milliseconds: 300),
                 child: Text(
                   isSignIn
-                      ? 'Pick up where you left off — your market is waiting.'
+                      ? 'Pick up where you left off - your market is waiting.'
                       : 'Create your profile as a client or seller.',
                   key: ValueKey('subtitle-$isSignIn'),
                   style: TextStyle(
@@ -597,7 +597,7 @@ class _SignUpFields extends StatelessWidget {
               prefixIcon: Icon(Icons.chat_outlined),
             ),
             validator: (value) {
-              if ((value ?? '').trim().length < 7) {
+              if ((value ?? '').trim().length < 8) {
                 return 'Seller WhatsApp number is required.';
               }
               return null;
@@ -624,3 +624,4 @@ String? _validatePassword(String? value) {
   if (password.length < 6) return 'Use at least 6 characters.';
   return null;
 }
+

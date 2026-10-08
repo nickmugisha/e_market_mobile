@@ -117,7 +117,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${profile.role.label} â€¢ ${profile.email}',
+                  '${profile.role.label} | ${profile.email}',
                   style: const TextStyle(color: AppColors.muted),
                 ),
                 const SizedBox(height: 18),
@@ -318,7 +318,7 @@ class _HomePageState extends State<HomePage> {
         : 'Hello, ${firstName == null || firstName.isEmpty ? 'there' : firstName}';
     final subtitle = widget.isVisitor
         ? 'Discover freely. Sign in only when you are ready.'
-        : '${profile!.role.label} account â€¢ Firebase connected';
+        : '${profile!.role.label} account | Firebase connected';
 
     return Scaffold(
       backgroundColor: AppColors.ink,
@@ -564,7 +564,7 @@ class _PremiumHomeHeader extends StatelessWidget {
                           ),
                           const SizedBox(width: 7),
                           const Text(
-                            'âœ¦',
+                            '',
                             style: TextStyle(
                               color: AppColors.accent,
                               fontSize: 15,
@@ -600,7 +600,7 @@ class _PremiumHomeHeader extends StatelessWidget {
                         child: Text(
                           isVisitor
                               ? 'EXPLORE MODE'
-                              : '${roleLabel?.toUpperCase() ?? 'ACCOUNT'} â€¢ LIVE',
+                              : '${roleLabel?.toUpperCase() ?? 'ACCOUNT'} | LIVE',
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 9,

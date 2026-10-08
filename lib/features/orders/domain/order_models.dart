@@ -17,13 +17,13 @@ enum OrderStatus {
   }
 
   String get label => switch (this) {
-        OrderStatus.pending => 'Pending',
-        OrderStatus.confirmed => 'Confirmed',
-        OrderStatus.preparing => 'Preparing',
-        OrderStatus.ready => 'Ready',
-        OrderStatus.completed => 'Completed',
-        OrderStatus.cancelled => 'Cancelled',
-      };
+    OrderStatus.pending => 'Pending',
+    OrderStatus.confirmed => 'Confirmed',
+    OrderStatus.preparing => 'Preparing',
+    OrderStatus.ready => 'Ready',
+    OrderStatus.completed => 'Completed',
+    OrderStatus.cancelled => 'Cancelled',
+  };
 }
 
 enum FulfillmentType {
@@ -31,13 +31,15 @@ enum FulfillmentType {
   pickup;
 
   static FulfillmentType fromValue(String? value) {
-    return value == 'pickup' ? FulfillmentType.pickup : FulfillmentType.delivery;
+    return value == 'pickup'
+        ? FulfillmentType.pickup
+        : FulfillmentType.delivery;
   }
 
   String get label => switch (this) {
-        FulfillmentType.delivery => 'Delivery',
-        FulfillmentType.pickup => 'Pickup',
-      };
+    FulfillmentType.delivery => 'Delivery',
+    FulfillmentType.pickup => 'Pickup',
+  };
 }
 
 enum PaymentMethod {
@@ -58,10 +60,10 @@ enum PaymentMethod {
   }
 
   String get label => switch (this) {
-        PaymentMethod.cash => 'Cash',
-        PaymentMethod.mobileMoney => 'Mobile Money',
-        PaymentMethod.card => 'Card',
-      };
+    PaymentMethod.cash => 'Cash',
+    PaymentMethod.mobileMoney => 'Mobile Money',
+    PaymentMethod.card => 'Card',
+  };
 }
 
 enum PaymentStatus {
@@ -77,10 +79,10 @@ enum PaymentStatus {
   }
 
   String get label => switch (this) {
-        PaymentStatus.pending => 'Pending',
-        PaymentStatus.paid => 'Paid',
-        PaymentStatus.failed => 'Failed',
-      };
+    PaymentStatus.pending => 'Pending',
+    PaymentStatus.paid => 'Paid',
+    PaymentStatus.failed => 'Failed',
+  };
 }
 
 class MarketOrder {
@@ -97,6 +99,8 @@ class MarketOrder {
     required this.paymentReference,
     required this.currency,
     required this.total,
+    this.subtotal = 0,
+    this.deliveryFee = 0,
     required this.itemCount,
     required this.deliveryAddress,
     this.createdAt,
@@ -115,6 +119,8 @@ class MarketOrder {
   final String paymentReference;
   final MarketCurrency currency;
   final double total;
+  final double subtotal;
+  final double deliveryFee;
   final int itemCount;
   final String deliveryAddress;
   final DateTime? createdAt;
@@ -128,13 +134,20 @@ class MarketOrder {
       clientName: data['clientName'] as String? ?? '',
       clientPhone: data['clientPhone'] as String? ?? '',
       status: OrderStatus.fromValue(data['status'] as String?),
-      fulfillmentType:
-          FulfillmentType.fromValue(data['fulfillmentType'] as String?),
+      fulfillmentType: FulfillmentType.fromValue(
+        data['fulfillmentType'] as String?,
+      ),
       paymentMethod: PaymentMethod.fromValue(data['paymentMethod'] as String?),
       paymentStatus: PaymentStatus.fromValue(data['paymentStatus'] as String?),
       paymentReference: data['paymentReference'] as String? ?? '',
       currency: MarketCurrency.fromValue(data['currency'] as String?),
       total: FirestoreValue.doubleValue(data['total']),
+      subtotal: data.containsKey('subtotal')
+          ? FirestoreValue.doubleValue(data['subtotal'])
+          : FirestoreValue.doubleValue(data['total']),
+      deliveryFee: data.containsKey('deliveryFee')
+          ? FirestoreValue.doubleValue(data['deliveryFee'])
+          : 0,
       itemCount: FirestoreValue.intValue(data['itemCount']),
       deliveryAddress: data['deliveryAddress'] as String? ?? '',
       createdAt: FirestoreValue.date(data['createdAt']),

@@ -23,20 +23,20 @@ class PaymentSimulator {
 
     return switch (method) {
       PaymentMethod.cash => PaymentSimulationResult(
-          status: PaymentStatus.pending,
-          message: 'Cash payment will be completed at delivery or pickup.',
-          reference: reference,
-        ),
+        status: PaymentStatus.pending,
+        message: 'Cash payment will be completed at delivery or pickup.',
+        reference: reference,
+      ),
       PaymentMethod.mobileMoney => PaymentSimulationResult(
-          status: PaymentStatus.paid,
-          message: 'Mobile Money payment simulated successfully.',
-          reference: reference,
-        ),
+        status: PaymentStatus.paid,
+        message: 'Mobile Money payment simulated successfully.',
+        reference: reference,
+      ),
       PaymentMethod.card => PaymentSimulationResult(
-          status: PaymentStatus.paid,
-          message: 'Card payment simulated successfully.',
-          reference: reference,
-        ),
+        status: PaymentStatus.failed,
+        message: 'Card payment simulation failed. Try another payment method.',
+        reference: reference,
+      ),
     };
   }
 }
