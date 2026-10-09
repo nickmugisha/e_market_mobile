@@ -221,11 +221,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: AppColors.canvasFor(context),
       appBar: AppBar(
         title: const Text('Checkout'),
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
+        backgroundColor: AppColors.surfaceFor(context),
+        surfaceTintColor: AppColors.surfaceFor(context),
       ),
       body: Form(
         key: _formKey,
@@ -482,7 +482,7 @@ class _SectionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceFor(context),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.line),
       ),
@@ -605,7 +605,7 @@ class _ReadyForOrderCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceFor(context),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: AppColors.line),
         boxShadow: const [
@@ -662,7 +662,7 @@ class _ReadyForOrderCard extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.canvas,
+                  color: AppColors.canvasFor(context),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -696,7 +696,7 @@ class _ReadyForOrderCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.canvas,
+                  color: AppColors.canvasFor(context),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: AppColors.line),
                 ),
@@ -732,7 +732,7 @@ class _ReadyForOrderCard extends StatelessWidget {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: AppColors.surfaceFor(context),
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(color: AppColors.line),
                                 ),

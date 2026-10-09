@@ -6,10 +6,7 @@ import '../../auth/domain/user_profile.dart';
 import '../domain/profile_validator.dart';
 
 class EditProfilePage extends StatefulWidget {
-  const EditProfilePage({
-    super.key,
-    required this.profile,
-  });
+  const EditProfilePage({super.key, required this.profile});
 
   final UserProfile profile;
 
@@ -58,9 +55,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile updated.')));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -82,11 +79,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final seller = widget.profile.role == UserRole.seller;
 
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: AppColors.canvasFor(context),
       appBar: AppBar(
         title: const Text('Edit profile'),
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
+        backgroundColor: AppColors.surfaceFor(context),
+        surfaceTintColor: AppColors.surfaceFor(context),
       ),
       body: Form(
         key: _formKey,
@@ -136,8 +133,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             TextFormField(
               controller: _name,
               enabled: !_saving,
-              validator: (value) =>
-                  ProfileValidator.validateName(value ?? ''),
+              validator: (value) => ProfileValidator.validateName(value ?? ''),
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 labelText: 'Name',
@@ -148,11 +144,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
             TextFormField(
               controller: _phone,
               enabled: !_saving,
-              validator: (value) =>
-                  ProfileValidator.validatePhone(value ?? ''),
+              validator: (value) => ProfileValidator.validatePhone(value ?? ''),
               keyboardType: TextInputType.phone,
-              textInputAction:
-                  seller ? TextInputAction.next : TextInputAction.done,
+              textInputAction: seller
+                  ? TextInputAction.next
+                  : TextInputAction.done,
               decoration: const InputDecoration(
                 labelText: 'Phone',
                 prefixIcon: Icon(Icons.phone_outlined),

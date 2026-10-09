@@ -22,10 +22,7 @@ class CurrencyService {
     return bifValue / _bifPerUnit[to]!;
   }
 
-  String format({
-    required double amount,
-    required MarketCurrency currency,
-  }) {
+  String format({required double amount, required MarketCurrency currency}) {
     final decimals = currency == MarketCurrency.bif ? 0 : 2;
     return '${currency.code} ${amount.toStringAsFixed(decimals)}';
   }

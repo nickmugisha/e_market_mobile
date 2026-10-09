@@ -112,148 +112,159 @@ class _AuthPageState extends State<AuthPage> {
   }
 
   void _continueAsVisitor() {
-    Navigator.of(context).push(
-      smoothRoute(const HomePage()),
-    );
+    Navigator.of(context).push(smoothRoute(const HomePage()));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: AppColors.ink,
       body: SafeArea(
         bottom: false,
-        child: Column(
-          children: [
-            Expanded(
-              flex: 4,
-              child: _Header(isSignIn: _isSignIn),
-            ),
-            Expanded(
-              flex: 8,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(22, 22, 22, 16),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(34),
-                    topRight: Radius.circular(34),
-                  ),
-                ),
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        _ModeSwitch(
-                          mode: _mode,
-                          enabled: !_loading,
-                          onChanged: (mode) {
-                            setState(() => _mode = mode);
-                            _formKey.currentState?.reset();
-                          },
-                        ),
-                        const SizedBox(height: 22),
-                        PageTransitionSwitcher(
-                          duration: const Duration(milliseconds: 360),
-                          transitionBuilder: (
-                            child,
-                            primaryAnimation,
-                            secondaryAnimation,
-                          ) {
-                            return SharedAxisTransition(
-                              animation: primaryAnimation,
-                              secondaryAnimation: secondaryAnimation,
-                              transitionType:
-                                  SharedAxisTransitionType.horizontal,
-                              fillColor: Colors.transparent,
-                              child: child,
-                            );
-                          },
-                          child: _isSignIn
-                              ? _SignInFields(
-                                  key: const ValueKey('signin'),
-                                  emailController: _emailController,
-                                  passwordController: _passwordController,
-                                  hidePassword: _hidePassword,
-                                  enabled: !_loading,
-                                  onTogglePassword: () => setState(
-                                    () => _hidePassword = !_hidePassword,
-                                  ),
-                                  onForgotPassword: _resetPassword,
-                                )
-                              : _SignUpFields(
-                                  key: const ValueKey('signup'),
-                                  nameController: _nameController,
-                                  emailController: _emailController,
-                                  phoneController: _phoneController,
-                                  passwordController: _passwordController,
-                                  whatsappController: _whatsappController,
-                                  hidePassword: _hidePassword,
-                                  role: _role,
-                                  enabled: !_loading,
-                                  onTogglePassword: () => setState(
-                                    () => _hidePassword = !_hidePassword,
-                                  ),
-                                  onRoleChanged: (role) => setState(
-                                    () => _role = role,
-                                  ),
-                                ),
-                        ),
-                        const SizedBox(height: 18),
-                        FilledButton(
-                          onPressed: _loading ? null : _submit,
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 180),
-                            child: _loading
-                                ? const SizedBox(
-                                    key: ValueKey('loading'),
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(
-                                    _isSignIn
-                                        ? 'Sign in'
-                                        : 'Create account',
-                                    key: const ValueKey('label'),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                        if (widget.showVisitorOption) ...[
-                          const SizedBox(height: 10),
-                          TextButton.icon(
-                            onPressed: _loading ? null : _continueAsVisitor,
-                            icon: const Icon(Icons.arrow_forward_rounded),
-                            label: const Text('Continue as visitor'),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Visitors can browse now. Buying requires authentication.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: AppColors.muted.withValues(alpha: 0.9),
-                              fontSize: 12,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compactHeight = constraints.maxHeight < 650;
+
+            return SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              physics: const BouncingScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: compactHeight ? 205 : 275,
+                      child: _Header(isSignIn: _isSignIn),
                     ),
-                  ),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.fromLTRB(
+                        22,
+                        compactHeight ? 18 : 22,
+                        22,
+                        24,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceFor(context),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(34),
+                          topRight: Radius.circular(34),
+                        ),
+                      ),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            _ModeSwitch(
+                              mode: _mode,
+                              enabled: !_loading,
+                              onChanged: (mode) {
+                                setState(() => _mode = mode);
+                                _formKey.currentState?.reset();
+                              },
+                            ),
+                            const SizedBox(height: 22),
+                            PageTransitionSwitcher(
+                              duration: const Duration(milliseconds: 360),
+                              transitionBuilder:
+                                  (
+                                    child,
+                                    primaryAnimation,
+                                    secondaryAnimation,
+                                  ) {
+                                    return SharedAxisTransition(
+                                      animation: primaryAnimation,
+                                      secondaryAnimation: secondaryAnimation,
+                                      transitionType:
+                                          SharedAxisTransitionType.horizontal,
+                                      fillColor: Colors.transparent,
+                                      child: child,
+                                    );
+                                  },
+                              child: _isSignIn
+                                  ? _SignInFields(
+                                      key: const ValueKey('signin'),
+                                      emailController: _emailController,
+                                      passwordController: _passwordController,
+                                      hidePassword: _hidePassword,
+                                      enabled: !_loading,
+                                      onTogglePassword: () => setState(
+                                        () => _hidePassword = !_hidePassword,
+                                      ),
+                                      onForgotPassword: _resetPassword,
+                                    )
+                                  : _SignUpFields(
+                                      key: const ValueKey('signup'),
+                                      nameController: _nameController,
+                                      emailController: _emailController,
+                                      phoneController: _phoneController,
+                                      passwordController: _passwordController,
+                                      whatsappController: _whatsappController,
+                                      hidePassword: _hidePassword,
+                                      role: _role,
+                                      enabled: !_loading,
+                                      onTogglePassword: () => setState(
+                                        () => _hidePassword = !_hidePassword,
+                                      ),
+                                      onRoleChanged: (role) =>
+                                          setState(() => _role = role),
+                                    ),
+                            ),
+                            const SizedBox(height: 18),
+                            FilledButton(
+                              onPressed: _loading ? null : _submit,
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 180),
+                                child: _loading
+                                    ? const SizedBox(
+                                        key: ValueKey('loading'),
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : Text(
+                                        _isSignIn
+                                            ? 'Sign in'
+                                            : 'Create account',
+                                        key: const ValueKey('label'),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            if (widget.showVisitorOption) ...[
+                              const SizedBox(height: 10),
+                              TextButton.icon(
+                                onPressed: _loading ? null : _continueAsVisitor,
+                                icon: const Icon(Icons.arrow_forward_rounded),
+                                label: const Text('Continue as visitor'),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Visitors can browse now. Buying requires authentication.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: AppColors.muted.withValues(alpha: 0.9),
+                                  fontSize: 12,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -292,15 +303,12 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              const EMarketLogo(
-                size: 42,
-                showWordmark: true,
-              ),
+              const EMarketLogo(size: 42, showWordmark: true),
               const SizedBox(height: 24),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: Text(
-                  isSignIn ? 'Welcome back.' : 'Join e-market.',
+                  isSignIn ? 'Your market is open.' : 'Start your market.',
                   key: ValueKey(isSignIn),
                   style: const TextStyle(
                     color: Colors.white,
@@ -316,8 +324,8 @@ class _Header extends StatelessWidget {
                 duration: const Duration(milliseconds: 300),
                 child: Text(
                   isSignIn
-                      ? 'Pick up where you left off - your market is waiting.'
-                      : 'Create your profile as a client or seller.',
+                      ? 'Sign in to continue shopping, selling and tracking orders.'
+                      : 'Create your client or seller space and start exploring.',
                   key: ValueKey('subtitle-$isSignIn'),
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.55),
@@ -350,7 +358,7 @@ class _ModeSwitch extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: AppColors.canvas,
+        color: AppColors.canvasFor(context),
         borderRadius: BorderRadius.circular(17),
       ),
       child: Row(
@@ -573,10 +581,8 @@ class _SignUpFields extends StatelessWidget {
           ),
           items: UserRole.values
               .map(
-                (value) => DropdownMenuItem(
-                  value: value,
-                  child: Text(value.label),
-                ),
+                (value) =>
+                    DropdownMenuItem(value: value, child: Text(value.label)),
               )
               .toList(),
           onChanged: enabled
@@ -624,4 +630,3 @@ String? _validatePassword(String? value) {
   if (password.length < 6) return 'Use at least 6 characters.';
   return null;
 }
-

@@ -1,9 +1,10 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/leaf_bag_loader.dart';
 import '../../home/presentation/home_page.dart';
 import '../data/auth_service.dart';
 import '../data/user_profile_repository.dart';
@@ -80,16 +81,13 @@ class _ProfileGateState extends State<_ProfileGate> {
 
     _showMissingProfile = false;
 
-    _missingProfileTimer = Timer(
-      const Duration(seconds: 8),
-      () {
-        if (!mounted) return;
+    _missingProfileTimer = Timer(const Duration(seconds: 8), () {
+      if (!mounted) return;
 
-        setState(() {
-          _showMissingProfile = true;
-        });
-      },
-    );
+      setState(() {
+        _showMissingProfile = true;
+      });
+    });
   }
 
   @override
@@ -104,9 +102,7 @@ class _ProfileGateState extends State<_ProfileGate> {
       stream: widget.profiles.watchProfile(widget.user.uid),
       builder: (context, profileSnapshot) {
         if (profileSnapshot.hasError) {
-          return _ProfileError(
-            onSignOut: widget.onSignOut,
-          );
+          return _ProfileError(onSignOut: widget.onSignOut);
         }
 
         final profile = profileSnapshot.data;
@@ -119,9 +115,7 @@ class _ProfileGateState extends State<_ProfileGate> {
 
         if (profileSnapshot.connectionState == ConnectionState.waiting ||
             !_showMissingProfile) {
-          return const _GateLoading(
-            message: 'Finishing your profile...',
-          );
+          return const _GateLoading(message: 'Finishing your profile...');
         }
 
         return _MissingProfile(
@@ -134,42 +128,21 @@ class _ProfileGateState extends State<_ProfileGate> {
 }
 
 class _GateLoading extends StatelessWidget {
-  const _GateLoading({
-    required this.message,
-  });
+  const _GateLoading({required this.message});
 
   final String message;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.ink,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(
-              color: AppColors.accent,
-            ),
-            const SizedBox(height: 18),
-            Text(
-              message,
-              style: const TextStyle(
-                color: Colors.white70,
-              ),
-            ),
-          ],
-        ),
-      ),
+      backgroundColor: AppColors.canvasFor(context),
+      body: Center(child: LeafBagLoader(message: message)),
     );
   }
 }
 
 class _MissingProfile extends StatelessWidget {
-  const _MissingProfile({
-    required this.email,
-    required this.onSignOut,
-  });
+  const _MissingProfile({required this.email, required this.onSignOut});
 
   final String email;
   final Future<void> Function() onSignOut;
@@ -248,9 +221,7 @@ class _MissingProfile extends StatelessWidget {
 }
 
 class _ProfileError extends StatelessWidget {
-  const _ProfileError({
-    required this.onSignOut,
-  });
+  const _ProfileError({required this.onSignOut});
 
   final Future<void> Function() onSignOut;
 

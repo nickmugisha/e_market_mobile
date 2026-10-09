@@ -13,11 +13,9 @@ class AuthFailure implements Exception {
 }
 
 class AuthService {
-  AuthService({
-    FirebaseAuth? auth,
-    FirebaseFirestore? firestore,
-  })  : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+  AuthService({FirebaseAuth? auth, FirebaseFirestore? firestore})
+    : _auth = auth ?? FirebaseAuth.instance,
+      _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
@@ -26,10 +24,7 @@ class AuthService {
 
   User? get currentUser => _auth.currentUser;
 
-  Future<void> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> signIn({required String email, required String password}) async {
     try {
       await _auth.signInWithEmailAndPassword(
         email: email.trim(),
@@ -73,9 +68,7 @@ class AuthService {
         'email': user.email ?? email.trim(),
         'phone': phone.trim(),
         'role': role.name,
-        'whatsappNumber': role == UserRole.seller
-            ? whatsappNumber.trim()
-            : '',
+        'whatsappNumber': role == UserRole.seller ? whatsappNumber.trim() : '',
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -135,8 +128,9 @@ class AuthService {
     return switch (error.code) {
       'invalid-email' => 'Enter a valid email address.',
       'user-disabled' => 'This account has been disabled.',
-      'user-not-found' || 'wrong-password' || 'invalid-credential' =>
-        'Incorrect email or password.',
+      'user-not-found' ||
+      'wrong-password' ||
+      'invalid-credential' => 'Incorrect email or password.',
       'email-already-in-use' =>
         'An account already exists with this email address.',
       'weak-password' => 'Use a stronger password with at least 6 characters.',

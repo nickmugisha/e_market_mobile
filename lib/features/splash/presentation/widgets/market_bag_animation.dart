@@ -5,98 +5,58 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class MarketBagAnimation extends StatelessWidget {
-  const MarketBagAnimation({
-    super.key,
-    required this.progress,
-  });
+  const MarketBagAnimation({super.key, required this.progress});
 
   final double progress;
 
   @override
   Widget build(BuildContext context) {
-    final bagEntrance = _interval(
-      progress,
-      0.03,
-      0.28,
-      Curves.easeOutBack,
-    );
-    final highlightProgress = _interval(
-      progress,
-      0.52,
-      0.77,
-      Curves.easeOutCubic,
-    );
+    final entrance = _interval(progress, 0.02, 0.27, Curves.easeOutBack);
 
-    final settle = _interval(
-      progress,
-      0.28,
-      0.72,
-      Curves.easeInOut,
-    );
+    final settle = _interval(progress, 0.22, 0.74, Curves.easeInOutCubic);
 
-    final bob = math.sin(settle * math.pi * 2) * 2.6 * (1 - settle);
+    final bob = math.sin(settle * math.pi * 2) * 4.0 * (1 - settle);
 
     return SizedBox(
-      width: 310,
-      height: 315,
+      width: 330,
+      height: 300,
       child: Stack(
         alignment: Alignment.center,
+        clipBehavior: Clip.none,
         children: [
           Positioned.fill(
             child: CustomPaint(
-              painter: _FlyingStrokesPainter(
-                progress: progress,
-              ),
+              painter: _FlyingStrokesPainter(progress: progress),
             ),
           ),
+          Positioned(
+            bottom: 20,
+            left: 72,
+            right: 72,
+            height: 36,
+            child: CustomPaint(painter: _GroundGlowPainter(opacity: entrance)),
+          ),
           Transform.translate(
-            offset: Offset(0, bob - 2),
+            offset: Offset(0, bob),
             child: Transform.scale(
-              scale: 0.76 + (0.24 * bagEntrance),
+              scale: 0.76 + (0.24 * entrance),
               child: Opacity(
-                opacity: bagEntrance.clamp(0.0, 1.0),
-                child: Container(
-                  width: 184,
-                  height: 196,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(48),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.ink.withValues(alpha: 0.08),
-                        blurRadius: 42,
-                        offset: const Offset(0, 22),
-                      ),
-                      BoxShadow(
-                        color: AppColors.accent.withValues(alpha: 0.10),
-                        blurRadius: 24,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
+                opacity: entrance.clamp(0.0, 1.0),
+                child: SizedBox(
+                  width: 205,
+                  height: 215,
                   child: CustomPaint(
                     painter: _BagPainter(
-                      reveal: bagEntrance,
+                      reveal: entrance,
                       impact: _interval(
                         progress,
                         0.30,
-                        0.64,
-                        Curves.easeOut,
+                        0.66,
+                        Curves.easeOutCubic,
                       ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 10,
-            left: 36,
-            right: 36,
-            height: 54,
-            child: CustomPaint(
-              painter: _HighlightPainter(
-                progress: highlightProgress,
               ),
             ),
           ),
@@ -105,12 +65,7 @@ class MarketBagAnimation extends StatelessWidget {
     );
   }
 
-  static double _interval(
-    double value,
-    double begin,
-    double end,
-    Curve curve,
-  ) {
+  static double _interval(double value, double begin, double end, Curve curve) {
     if (value <= begin) return 0;
     if (value >= end) return 1;
 
@@ -120,143 +75,182 @@ class MarketBagAnimation extends StatelessWidget {
 }
 
 class _BagPainter extends CustomPainter {
-  const _BagPainter({
-    required this.reveal,
-    required this.impact,
-  });
+  const _BagPainter({required this.reveal, required this.impact});
 
   final double reveal;
   final double impact;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final centerX = size.width / 2;
     final bagRect = Rect.fromLTWH(
-      size.width * 0.19,
-      size.height * 0.31,
-      size.width * 0.62,
-      size.height * 0.51,
+      size.width * 0.18,
+      size.height * 0.29,
+      size.width * 0.64,
+      size.height * 0.56,
     );
 
+    final centerX = size.width / 2;
+
     final bagPath = Path()
-      ..moveTo(bagRect.left + 12, bagRect.top + 5)
+      ..moveTo(bagRect.left + 16, bagRect.top + 4)
       ..quadraticBezierTo(
         bagRect.left + 3,
-        bagRect.top + 5,
+        bagRect.top + 4,
         bagRect.left,
-        bagRect.top + 18,
+        bagRect.top + 22,
       )
-      ..lineTo(bagRect.left + 9, bagRect.bottom - 15)
+      ..lineTo(bagRect.left + 9, bagRect.bottom - 17)
       ..quadraticBezierTo(
         bagRect.left + 11,
-        bagRect.bottom,
-        bagRect.left + 28,
-        bagRect.bottom + 2,
+        bagRect.bottom + 3,
+        bagRect.left + 30,
+        bagRect.bottom + 4,
       )
-      ..lineTo(bagRect.right - 28, bagRect.bottom + 2)
+      ..lineTo(bagRect.right - 30, bagRect.bottom + 4)
       ..quadraticBezierTo(
         bagRect.right - 11,
-        bagRect.bottom,
+        bagRect.bottom + 3,
         bagRect.right - 9,
-        bagRect.bottom - 15,
+        bagRect.bottom - 17,
       )
-      ..lineTo(bagRect.right, bagRect.top + 18)
+      ..lineTo(bagRect.right, bagRect.top + 22)
       ..quadraticBezierTo(
         bagRect.right - 3,
-        bagRect.top + 5,
-        bagRect.right - 12,
-        bagRect.top + 5,
+        bagRect.top + 4,
+        bagRect.right - 16,
+        bagRect.top + 4,
       )
       ..close();
 
-    final fill = Paint()
-      ..style = PaintingStyle.fill
-      ..color = const Color(0xFFF8FBFF);
+    canvas.save();
+    canvas.translate(0, 10);
+    canvas.drawPath(
+      bagPath,
+      Paint()
+        ..color = AppColors.accentStrong.withValues(alpha: 0.15 * reveal)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18),
+    );
+    canvas.restore();
 
-    final outline = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.5
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..color = AppColors.ink.withValues(alpha: 0.90 * reveal);
+    final fill = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFFFFFFFF), Color(0xFFF4FBE8), Color(0xFFE7F5CC)],
+      ).createShader(bagRect);
 
     canvas.drawPath(bagPath, fill);
-    canvas.drawPath(bagPath, outline);
+
+    canvas.drawPath(
+      bagPath,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4.1
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..color = AppColors.ink.withValues(alpha: 0.92 * reveal),
+    );
 
     final handle = Path()
-      ..moveTo(size.width * 0.35, bagRect.top + 11)
+      ..moveTo(size.width * 0.35, bagRect.top + 12)
       ..cubicTo(
         size.width * 0.36,
-        size.height * 0.15,
+        size.height * 0.12,
         size.width * 0.64,
-        size.height * 0.15,
+        size.height * 0.12,
         size.width * 0.65,
-        bagRect.top + 11,
+        bagRect.top + 12,
       );
 
     canvas.drawPath(
       handle,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 5
+        ..strokeWidth = 5.1
         ..strokeCap = StrokeCap.round
-        ..color = AppColors.ink.withValues(alpha: 0.86 * reveal),
+        ..color = AppColors.ink.withValues(alpha: 0.90 * reveal),
     );
 
-    final lipY = bagRect.top + 20;
-    final lipPath = Path()
-      ..moveTo(bagRect.left + 12, lipY)
+    final lipY = bagRect.top + 23;
+
+    final lip = Path()
+      ..moveTo(bagRect.left + 13, lipY)
       ..quadraticBezierTo(
         centerX,
-        lipY + (7 * impact),
-        bagRect.right - 12,
+        lipY + (9 * impact),
+        bagRect.right - 13,
         lipY,
       );
 
     canvas.drawPath(
-      lipPath,
+      lip,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 3.3
+        ..strokeWidth = 3.2
         ..strokeCap = StrokeCap.round
-        ..color = AppColors.accent.withValues(alpha: 0.70),
+        ..color = AppColors.accentStrong.withValues(alpha: 0.88),
     );
 
-    final badgeCenter = Offset(
-      centerX,
-      bagRect.top + bagRect.height * 0.56,
+    final emblem = Offset(centerX, bagRect.top + bagRect.height * 0.58);
+
+    canvas.drawCircle(
+      emblem,
+      33,
+      Paint()..color = AppColors.accentSoft.withValues(alpha: 0.94),
     );
 
     canvas.drawCircle(
-      badgeCenter,
-      28,
-      Paint()
-        ..color = AppColors.accentSoft.withValues(alpha: 0.95),
-    );
-
-    canvas.drawCircle(
-      badgeCenter,
-      27,
+      emblem,
+      32,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..color = AppColors.accent.withValues(alpha: 0.18),
+        ..strokeWidth = 1.3
+        ..color = AppColors.accentStrong.withValues(alpha: 0.20),
     );
 
-    final sparkPaint = Paint()
-      ..color = AppColors.accent
-      ..strokeWidth = 4.4
-      ..strokeCap = StrokeCap.round;
+    _drawLeaf(
+      canvas,
+      center: Offset(emblem.dx - 7, emblem.dy + 1),
+      angle: -0.63,
+      color: AppColors.accentStrong,
+    );
 
-    final spark = Path()
-      ..moveTo(badgeCenter.dx - 2, badgeCenter.dy - 14)
-      ..lineTo(badgeCenter.dx - 8, badgeCenter.dy + 1)
-      ..lineTo(badgeCenter.dx + 1, badgeCenter.dy - 1)
-      ..lineTo(badgeCenter.dx - 3, badgeCenter.dy + 15)
-      ..lineTo(badgeCenter.dx + 11, badgeCenter.dy - 4)
-      ..lineTo(badgeCenter.dx + 3, badgeCenter.dy - 2);
+    _drawLeaf(
+      canvas,
+      center: Offset(emblem.dx + 8, emblem.dy - 3),
+      angle: 0.72,
+      color: AppColors.leafGlow,
+    );
 
-    canvas.drawPath(spark, sparkPaint);
+    canvas.drawLine(
+      Offset(emblem.dx, emblem.dy + 11),
+      Offset(emblem.dx, emblem.dy - 10),
+      Paint()
+        ..color = AppColors.ink.withValues(alpha: 0.50)
+        ..strokeWidth = 2
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  void _drawLeaf(
+    Canvas canvas, {
+    required Offset center,
+    required double angle,
+    required Color color,
+  }) {
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(angle);
+
+    final leaf = Path()
+      ..moveTo(-2, 12)
+      ..quadraticBezierTo(-17, -4, 0, -15)
+      ..quadraticBezierTo(17, -4, -2, 12)
+      ..close();
+
+    canvas.drawPath(leaf, Paint()..color = color);
+
+    canvas.restore();
   }
 
   @override
@@ -266,114 +260,140 @@ class _BagPainter extends CustomPainter {
 }
 
 class _FlyingStrokesPainter extends CustomPainter {
-  const _FlyingStrokesPainter({
-    required this.progress,
-  });
+  const _FlyingStrokesPainter({required this.progress});
 
   final double progress;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final target = Offset(size.width / 2, size.height * 0.37);
+    final target = Offset(size.width * 0.50, size.height * 0.42);
 
-    final strokes = <_StrokeSpec>[
-      _StrokeSpec(
-        start: Offset(size.width * 0.02, size.height * 0.22),
-        targetOffset: const Offset(-21, -7),
-        begin: 0.13,
-        end: 0.42,
-        length: 25,
+    final flights = <_FlightSpec>[
+      _FlightSpec(
+        start: Offset(-14, size.height * 0.21),
+        control1: Offset(size.width * 0.18, size.height * 0.05),
+        control2: Offset(size.width * 0.34, size.height * 0.36),
+        targetOffset: const Offset(-23, -3),
+        begin: 0.10,
+        end: 0.43,
+        color: AppColors.leafGlow,
         width: 4.2,
-        color: AppColors.accent,
+        trail: 52,
       ),
-      _StrokeSpec(
-        start: Offset(size.width * 0.96, size.height * 0.19),
-        targetOffset: const Offset(24, -5),
-        begin: 0.19,
+      _FlightSpec(
+        start: Offset(size.width + 12, size.height * 0.16),
+        control1: Offset(size.width * 0.78, -10),
+        control2: Offset(size.width * 0.68, size.height * 0.31),
+        targetOffset: const Offset(25, -5),
+        begin: 0.17,
         end: 0.49,
-        length: 30,
-        width: 4.8,
-        color: Color(0xFF93C7FF),
+        color: AppColors.accent,
+        width: 4.6,
+        trail: 59,
       ),
-      _StrokeSpec(
-        start: Offset(size.width * 0.28, -6),
-        targetOffset: const Offset(-10, -14),
-        begin: 0.24,
-        end: 0.53,
-        length: 22,
+      _FlightSpec(
+        start: Offset(size.width * 0.22, -18),
+        control1: Offset(size.width * 0.27, size.height * 0.13),
+        control2: Offset(size.width * 0.40, size.height * 0.22),
+        targetOffset: const Offset(-10, -17),
+        begin: 0.23,
+        end: 0.54,
+        color: AppColors.accentStrong,
+        width: 3.6,
+        trail: 45,
+      ),
+      _FlightSpec(
+        start: Offset(size.width * 0.82, -15),
+        control1: Offset(size.width * 0.76, size.height * 0.13),
+        control2: Offset(size.width * 0.61, size.height * 0.23),
+        targetOffset: const Offset(12, -16),
+        begin: 0.29,
+        end: 0.60,
+        color: Color(0xFFDDFB87),
         width: 3.7,
-        color: AppColors.ink,
+        trail: 43,
       ),
-      _StrokeSpec(
-        start: Offset(size.width * 0.80, size.height * 0.02),
-        targetOffset: const Offset(14, -14),
-        begin: 0.30,
-        end: 0.59,
-        length: 18,
-        width: 3.5,
-        color: Color(0xFF4C9BFF),
-      ),
-      _StrokeSpec(
-        start: Offset(-10, size.height * 0.47),
-        targetOffset: const Offset(-27, 0),
-        begin: 0.34,
-        end: 0.63,
-        length: 17,
-        width: 3.2,
-        color: Color(0xFFB6D8FF),
+      _FlightSpec(
+        start: Offset(-20, size.height * 0.56),
+        control1: Offset(size.width * 0.17, size.height * 0.54),
+        control2: Offset(size.width * 0.31, size.height * 0.43),
+        targetOffset: const Offset(-30, 6),
+        begin: 0.35,
+        end: 0.66,
+        color: Color(0xFFB7E66E),
+        width: 3.3,
+        trail: 40,
       ),
     ];
 
-    for (final spec in strokes) {
+    for (final spec in flights) {
       final p = _interval(
         progress,
         spec.begin,
         spec.end,
-        Curves.easeInCubic,
+        Curves.easeInOutCubic,
       );
 
       if (p <= 0 || p >= 1) continue;
 
       final destination = target + spec.targetOffset;
-      final current = Offset.lerp(spec.start, destination, p)!;
 
-      final direction = destination - spec.start;
-      final magnitude = direction.distance;
-      if (magnitude == 0) continue;
+      final path = Path()
+        ..moveTo(spec.start.dx, spec.start.dy)
+        ..cubicTo(
+          spec.control1.dx,
+          spec.control1.dy,
+          spec.control2.dx,
+          spec.control2.dy,
+          destination.dx,
+          destination.dy,
+        );
 
-      final unit = direction / magnitude;
+      final metric = path.computeMetrics().first;
+      final head = metric.length * p;
+      final tail = math.max(0.0, head - spec.trail);
+      final segment = metric.extractPath(tail, head);
+
       final opacity = math.sin(p * math.pi).clamp(0.0, 1.0);
-      final half = unit * (spec.length / 2);
 
-      canvas.drawLine(
-        current - half,
-        current + half,
+      canvas.drawPath(
+        segment,
         Paint()
-          ..color = spec.color.withValues(alpha: opacity * 0.95)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = spec.width * 3.0
+          ..strokeCap = StrokeCap.round
+          ..color = spec.color.withValues(alpha: opacity * 0.20)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+      );
+
+      canvas.drawPath(
+        segment,
+        Paint()
+          ..style = PaintingStyle.stroke
           ..strokeWidth = spec.width
-          ..strokeCap = StrokeCap.round,
+          ..strokeCap = StrokeCap.round
+          ..color = spec.color.withValues(alpha: opacity),
       );
 
-      canvas.drawCircle(
-        current - (unit * (spec.length * 0.72)),
-        spec.width * 0.52,
-        Paint()
-          ..color = spec.color.withValues(alpha: opacity * 0.26),
-      );
+      final tangent = metric.getTangentForOffset(head);
+
+      if (tangent != null) {
+        canvas.drawCircle(
+          tangent.position,
+          spec.width * 1.15,
+          Paint()
+            ..color = spec.color.withValues(alpha: opacity * 0.92)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+        );
+      }
     }
   }
 
-  double _interval(
-    double value,
-    double begin,
-    double end,
-    Curve curve,
-  ) {
+  double _interval(double value, double begin, double end, Curve curve) {
     if (value <= begin) return 0;
     if (value >= end) return 1;
 
-    final normalized = (value - begin) / (end - begin);
-    return curve.transform(normalized);
+    return curve.transform((value - begin) / (end - begin));
   }
 
   @override
@@ -382,98 +402,51 @@ class _FlyingStrokesPainter extends CustomPainter {
   }
 }
 
-class _StrokeSpec {
-  const _StrokeSpec({
-    required this.start,
-    required this.targetOffset,
-    required this.begin,
-    required this.end,
-    required this.length,
-    required this.width,
-    required this.color,
-  });
+class _GroundGlowPainter extends CustomPainter {
+  const _GroundGlowPainter({required this.opacity});
 
-  final Offset start;
-  final Offset targetOffset;
-  final double begin;
-  final double end;
-  final double length;
-  final double width;
-  final Color color;
-}
-
-class _HighlightPainter extends CustomPainter {
-  const _HighlightPainter({
-    required this.progress,
-  });
-
-  final double progress;
+  final double opacity;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final specs = [
-      (
-        path: Path()
-          ..moveTo(size.width * 0.16, size.height * 0.28)
-          ..quadraticBezierTo(
-            size.width * 0.44,
-            size.height * 0.17,
-            size.width * 0.68,
-            size.height * 0.26,
-          ),
-        begin: 0.0,
-        color: AppColors.accent,
-        width: 4.4,
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width / 2, size.height / 2),
+        width: size.width * 0.72,
+        height: size.height * 0.30,
       ),
-      (
-        path: Path()
-          ..moveTo(size.width * 0.28, size.height * 0.53)
-          ..quadraticBezierTo(
-            size.width * 0.52,
-            size.height * 0.39,
-            size.width * 0.83,
-            size.height * 0.48,
-          ),
-        begin: 0.16,
-        color: const Color(0xFF93C7FF),
-        width: 3.8,
-      ),
-      (
-        path: Path()
-          ..moveTo(size.width * 0.20, size.height * 0.79)
-          ..quadraticBezierTo(
-            size.width * 0.40,
-            size.height * 0.71,
-            size.width * 0.59,
-            size.height * 0.76,
-          ),
-        begin: 0.32,
-        color: AppColors.ink,
-        width: 3.2,
-      ),
-    ];
-
-    for (final spec in specs) {
-      final local = ((progress - spec.begin) / (1 - spec.begin))
-          .clamp(0.0, 1.0);
-      if (local <= 0) continue;
-
-      final metric = spec.path.computeMetrics().first;
-      final partial = metric.extractPath(0, metric.length * local);
-
-      canvas.drawPath(
-        partial,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = spec.width
-          ..strokeCap = StrokeCap.round
-          ..color = spec.color.withValues(alpha: 0.90),
-      );
-    }
+      Paint()
+        ..color = AppColors.leafGlow.withValues(alpha: 0.20 * opacity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16),
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _HighlightPainter oldDelegate) {
-    return oldDelegate.progress != progress;
+  bool shouldRepaint(covariant _GroundGlowPainter oldDelegate) {
+    return oldDelegate.opacity != opacity;
   }
+}
+
+class _FlightSpec {
+  const _FlightSpec({
+    required this.start,
+    required this.control1,
+    required this.control2,
+    required this.targetOffset,
+    required this.begin,
+    required this.end,
+    required this.color,
+    required this.width,
+    required this.trail,
+  });
+
+  final Offset start;
+  final Offset control1;
+  final Offset control2;
+  final Offset targetOffset;
+  final double begin;
+  final double end;
+  final Color color;
+  final double width;
+  final double trail;
 }

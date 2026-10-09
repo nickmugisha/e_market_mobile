@@ -5,9 +5,9 @@ enum UserRole {
   seller;
 
   String get label => switch (this) {
-        UserRole.client => 'Client',
-        UserRole.seller => 'Seller',
-      };
+    UserRole.client => 'Client',
+    UserRole.seller => 'Seller',
+  };
 
   static UserRole fromValue(String? value) {
     return value == 'seller' ? UserRole.seller : UserRole.client;

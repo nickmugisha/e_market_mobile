@@ -11,10 +11,7 @@ import '../../orders/presentation/order_history_page.dart';
 import 'product_form_page.dart';
 
 class SellerDashboardPage extends StatefulWidget {
-  const SellerDashboardPage({
-    super.key,
-    required this.profile,
-  });
+  const SellerDashboardPage({super.key, required this.profile});
 
   final UserProfile profile;
 
@@ -52,12 +49,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
 
   Future<void> _openForm([Product? product]) async {
     await Navigator.of(context).push(
-      smoothRoute(
-        ProductFormPage(
-          profile: widget.profile,
-          product: product,
-        ),
-      ),
+      smoothRoute(ProductFormPage(profile: widget.profile, product: product)),
     );
   }
 
@@ -114,16 +106,16 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
       await _products.setStock(product.id, next);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not update stock.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Could not update stock.')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: AppColors.canvasFor(context),
       appBar: AppBar(
         title: const Text('Seller dashboard'),
         backgroundColor: AppColors.ink,
@@ -158,7 +150,20 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
 
           final products = snapshot.data ?? const <Product>[];
           final active = products.where((item) => item.active).length;
-          final lowStock = products.where((item) => item.stock <= 5).length;
+          final lowStock = products
+              .where((item) => item.stock > 0 && item.stock <= 5)
+              .length;
+
+          final soldOut = products.where((item) => item.stock == 0).length;
+
+          final hidden = products.where((item) => !item.active).length;
+
+          final categories = products
+              .map((item) => item.categoryId)
+              .where((id) => id.isNotEmpty)
+              .toSet()
+              .length;
+
           final totalStock = products.fold<int>(
             0,
             (total, item) => total + item.stock,
@@ -180,9 +185,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
                   child: OutlinedButton.icon(
                     onPressed: () {
                       Navigator.of(context).push(
-                        smoothRoute(
-                          OrderHistoryPage(profile: widget.profile),
-                        ),
+                        smoothRoute(OrderHistoryPage(profile: widget.profile)),
                       );
                     },
                     icon: const Icon(Icons.receipt_long_rounded),
@@ -190,6 +193,25 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
                   ),
                 ),
                 const SizedBox(height: 18),
+                const Text(
+                  'Seller insights',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Live overview of your marketplace activity.',
+                  style: TextStyle(
+                    color: AppColors.muted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
                 Row(
                   children: [
                     Expanded(
@@ -210,21 +232,76 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _StatCard(
+                        value: totalStock.toString(),
+                        label: 'Units',
+                        icon: Icons.layers_outlined,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatCard(
                         value: lowStock.toString(),
                         label: 'Low stock',
                         icon: Icons.warning_amber_rounded,
                       ),
                     ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _StatCard(
+                        value: soldOut.toString(),
+                        label: 'Sold out',
+                        icon: Icons.remove_shopping_cart_outlined,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _StatCard(
+                        value: categories.toString(),
+                        label: 'Categories',
+                        icon: Icons.category_outlined,
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  '$totalStock item${totalStock == 1 ? '' : 's'} currently in stock',
-                  style: const TextStyle(
-                    color: AppColors.muted,
-                    fontWeight: FontWeight.w700,
+
+                if (hidden > 0) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 11,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentSoft,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.visibility_off_outlined,
+                          size: 18,
+                          color: AppColors.accentStrong,
+                        ),
+                        const SizedBox(width: 9),
+                        Text(
+                          '$hidden hidden product${hidden == 1 ? '' : 's'}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ],
+
                 const SizedBox(height: 24),
                 const Row(
                   children: [
@@ -239,10 +316,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
                     ),
                     Text(
                       'Manage stock & visibility',
-                      style: TextStyle(
-                        color: AppColors.muted,
-                        fontSize: 11,
-                      ),
+                      style: TextStyle(color: AppColors.muted, fontSize: 11),
                     ),
                   ],
                 ),
@@ -278,10 +352,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
 }
 
 class _SellerHero extends StatelessWidget {
-  const _SellerHero({
-    required this.name,
-    required this.whatsapp,
-  });
+  const _SellerHero({required this.name, required this.whatsapp});
 
   final String name;
   final String whatsapp;
@@ -354,7 +425,7 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceFor(context),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.line),
       ),
@@ -365,10 +436,7 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-            ),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 2),
           Text(
@@ -405,7 +473,7 @@ class _ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: AppColors.surfaceFor(context),
       borderRadius: BorderRadius.circular(24),
       child: InkWell(
         borderRadius: BorderRadius.circular(24),
@@ -446,10 +514,7 @@ class _ProductCard extends StatelessWidget {
                             if (value == 'delete') onDelete();
                           },
                           itemBuilder: (context) => const [
-                            PopupMenuItem(
-                              value: 'edit',
-                              child: Text('Edit'),
-                            ),
+                            PopupMenuItem(value: 'edit', child: Text('Edit')),
                             PopupMenuItem(
                               value: 'delete',
                               child: Text('Delete'),
@@ -518,7 +583,7 @@ class _EmptyProducts extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(26),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceFor(context),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.line),
       ),
@@ -532,19 +597,13 @@ class _EmptyProducts extends StatelessWidget {
           const SizedBox(height: 12),
           const Text(
             'No products yet',
-            style: TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w900,
-            ),
+            style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
           const Text(
             'Create your first product and it will be ready for the marketplace.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.muted,
-              height: 1.4,
-            ),
+            style: TextStyle(color: AppColors.muted, height: 1.4),
           ),
           const SizedBox(height: 16),
           FilledButton.icon(
@@ -584,10 +643,7 @@ class _DashboardMessage extends StatelessWidget {
         Text(
           title,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 23,
-            fontWeight: FontWeight.w900,
-          ),
+          style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 8),
         Text(
@@ -596,10 +652,7 @@ class _DashboardMessage extends StatelessWidget {
           style: const TextStyle(color: AppColors.muted),
         ),
         const SizedBox(height: 18),
-        OutlinedButton(
-          onPressed: onAction,
-          child: Text(actionLabel),
-        ),
+        OutlinedButton(onPressed: onAction, child: Text(actionLabel)),
       ],
     );
   }

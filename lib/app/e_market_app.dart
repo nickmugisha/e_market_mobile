@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_theme.dart';
+import '../core/theme/theme_controller.dart';
 import '../features/splash/presentation/splash_page.dart';
 
 class EMarketApp extends StatelessWidget {
@@ -8,11 +9,18 @@ class EMarketApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'e-market',
-      theme: AppTheme.light,
-      home: const SplashPage(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeController.mode,
+      builder: (context, themeMode, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'e-market',
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: themeMode,
+          home: const SplashPage(),
+        );
+      },
     );
   }
 }

@@ -27,6 +27,7 @@ class _SplashPageState extends State<SplashPage>
 
     _controller.addStatusListener((status) {
       if (status != AnimationStatus.completed || !mounted) return;
+
       Navigator.of(context).pushReplacement(smoothRoute(AuthGate()));
     });
   }
@@ -46,14 +47,13 @@ class _SplashPageState extends State<SplashPage>
     if (value <= begin) return 0;
     if (value >= end) return 1;
 
-    final normalized = (value - begin) / (end - begin);
-    return curve.transform(normalized);
+    return curve.transform((value - begin) / (end - begin));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFBFD),
+      backgroundColor: const Color(0xFFFBFDF7),
       body: SafeArea(
         child: AnimatedBuilder(
           animation: _controller,
@@ -62,43 +62,36 @@ class _SplashPageState extends State<SplashPage>
 
             final titleProgress = _interval(
               progress,
-              0.58,
-              0.80,
+              0.56,
+              0.79,
               curve: Curves.easeOutBack,
             );
-            final subtitleProgress = _interval(
-              progress,
-              0.67,
-              0.87,
-            );
-            final loadingProgress = _interval(
-              progress,
-              0.76,
-              0.96,
-            );
+
+            final subtitleProgress = _interval(progress, 0.65, 0.86);
+
+            final loadingProgress = _interval(progress, 0.75, 0.96);
 
             return Stack(
               fit: StackFit.expand,
               children: [
-                const _SoftBackground(),
+                const _LeafBackground(),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 28),
                   child: Column(
                     children: [
                       const Spacer(flex: 2),
                       MarketBagAnimation(progress: progress),
-                      const SizedBox(height: 4),
                       Transform.translate(
-                        offset: Offset(0, 12 * (1 - titleProgress)),
+                        offset: Offset(0, 13 * (1 - titleProgress)),
                         child: Opacity(
                           opacity: titleProgress.clamp(0.0, 1.0),
                           child: const Text(
                             'e-market',
                             style: TextStyle(
                               color: AppColors.ink,
-                              fontSize: 36,
+                              fontSize: 38,
                               fontWeight: FontWeight.w900,
-                              letterSpacing: -1.6,
+                              letterSpacing: -1.7,
                             ),
                           ),
                         ),
@@ -109,13 +102,13 @@ class _SplashPageState extends State<SplashPage>
                         child: Opacity(
                           opacity: subtitleProgress.clamp(0.0, 1.0),
                           child: const Text(
-                            'Good finds are on the way.',
+                            'Fresh finds. Easy shopping.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: AppColors.muted,
                               fontSize: 14,
                               height: 1.45,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -123,22 +116,22 @@ class _SplashPageState extends State<SplashPage>
                       const Spacer(),
                       Opacity(
                         opacity: loadingProgress.clamp(0.0, 1.0),
-                        child: _LoadingDots(progress: progress),
+                        child: _LoadingLeafLine(progress: progress),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 18),
                       Opacity(
                         opacity: loadingProgress.clamp(0.0, 1.0),
                         child: Text(
-                          'MADE FOR EASY SHOPPING',
+                          'YOUR MARKET, MADE LIGHTER',
                           style: TextStyle(
                             color: AppColors.ink.withValues(alpha: 0.34),
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
-                            letterSpacing: 1.8,
+                            letterSpacing: 1.7,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 22),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -151,8 +144,8 @@ class _SplashPageState extends State<SplashPage>
   }
 }
 
-class _SoftBackground extends StatelessWidget {
-  const _SoftBackground();
+class _LeafBackground extends StatelessWidget {
+  const _LeafBackground();
 
   @override
   Widget build(BuildContext context) {
@@ -160,30 +153,40 @@ class _SoftBackground extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const ColoredBox(color: Color(0xFFFAFBFD)),
+          const ColoredBox(color: Color(0xFFFBFDF7)),
           Positioned(
             top: -150,
-            right: -110,
+            right: -105,
             child: Container(
-              width: 320,
-              height: 320,
+              width: 315,
+              height: 315,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.accent.withValues(alpha: 0.075),
+                color: AppColors.leafGlow.withValues(alpha: 0.12),
               ),
             ),
           ),
           Positioned(
             left: -120,
-            bottom: 70,
+            bottom: 55,
             child: Container(
               width: 280,
               height: 280,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFEAF4FF).withValues(alpha: 0.60),
+                color: AppColors.accentSoft.withValues(alpha: 0.80),
               ),
             ),
+          ),
+          const Positioned(
+            left: 34,
+            top: 82,
+            child: TransformLeaf(angle: -0.50, size: 25, opacity: 0.14),
+          ),
+          const Positioned(
+            right: 38,
+            bottom: 110,
+            child: TransformLeaf(angle: 0.62, size: 30, opacity: 0.12),
           ),
         ],
       ),
@@ -191,32 +194,72 @@ class _SoftBackground extends StatelessWidget {
   }
 }
 
-class _LoadingDots extends StatelessWidget {
-  const _LoadingDots({
-    required this.progress,
+class TransformLeaf extends StatelessWidget {
+  const TransformLeaf({
+    super.key,
+    required this.angle,
+    required this.size,
+    required this.opacity,
   });
+
+  final double angle;
+  final double size;
+  final double opacity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.rotate(
+      angle: angle,
+      child: Icon(
+        Icons.eco_rounded,
+        size: size,
+        color: AppColors.accentStrong.withValues(alpha: opacity),
+      ),
+    );
+  }
+}
+
+class _LoadingLeafLine extends StatelessWidget {
+  const _LoadingLeafLine({required this.progress});
 
   final double progress;
 
   @override
   Widget build(BuildContext context) {
+    final width = 72 + (progress * 16);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(3, (index) {
-        final shifted = (progress * 8) - index;
-        final wave = (shifted - shifted.floor()).abs();
-        final emphasis = 0.55 + (0.45 * (1 - ((wave - 0.5).abs() * 2)));
-
-        return Container(
-          width: index == 1 ? 18 : 7,
-          height: 7,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
+      children: [
+        const Icon(Icons.eco_rounded, size: 16, color: AppColors.accentStrong),
+        const SizedBox(width: 9),
+        Container(
+          width: width,
+          height: 5,
           decoration: BoxDecoration(
-            color: AppColors.accent.withValues(alpha: emphasis),
+            color: AppColors.accentSoft,
             borderRadius: BorderRadius.circular(999),
           ),
-        );
-      }),
+          alignment: Alignment.centerLeft,
+          child: FractionallySizedBox(
+            widthFactor: ((progress - 0.68) / 0.32).clamp(0.10, 1.0),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.accentStrong, AppColors.leafGlow],
+                ),
+                borderRadius: BorderRadius.circular(999),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.leafGlow.withValues(alpha: 0.38),
+                    blurRadius: 9,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

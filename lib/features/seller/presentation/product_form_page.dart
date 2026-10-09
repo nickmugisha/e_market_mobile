@@ -10,11 +10,7 @@ import '../../catalogue/domain/product.dart';
 import '../../catalogue/utils/product_image_codec.dart';
 
 class ProductFormPage extends StatefulWidget {
-  const ProductFormPage({
-    super.key,
-    required this.profile,
-    this.product,
-  });
+  const ProductFormPage({super.key, required this.profile, this.product});
 
   final UserProfile profile;
   final Product? product;
@@ -179,11 +175,11 @@ class _ProductFormPageState extends State<ProductFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: AppColors.canvasFor(context),
       appBar: AppBar(
         title: Text(widget.isEditing ? 'Edit product' : 'New product'),
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
+        backgroundColor: AppColors.surfaceFor(context),
+        surfaceTintColor: AppColors.surfaceFor(context),
       ),
       body: StreamBuilder<List<MarketCategory>>(
         stream: _categories.watchActiveCategories(),
@@ -202,7 +198,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
                 Container(
                   height: 220,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surfaceFor(context),
                     borderRadius: BorderRadius.circular(28),
                     border: Border.all(color: AppColors.line),
                   ),
@@ -292,8 +288,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
                     helperText: snapshot.hasError
                         ? 'Could not load categories.'
                         : categories.isEmpty
-                            ? 'Categories are being prepared...'
-                            : null,
+                        ? 'Categories are being prepared...'
+                        : null,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -326,7 +322,9 @@ class _ProductFormPageState extends State<ProductFormPage> {
                     Expanded(
                       child: DropdownButtonFormField<MarketCurrency>(
                         initialValue: _currency,
-                        decoration: const InputDecoration(labelText: 'Currency'),
+                        decoration: const InputDecoration(
+                          labelText: 'Currency',
+                        ),
                         items: MarketCurrency.values
                             .map(
                               (currency) => DropdownMenuItem(

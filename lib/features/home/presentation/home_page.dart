@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/navigation/app_transitions.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/theme_controller.dart';
 import '../../auth/data/auth_service.dart';
 import '../../auth/domain/user_profile.dart';
 import '../../auth/presentation/auth_page.dart';
@@ -14,6 +15,7 @@ import '../../catalogue/presentation/catalogue_page.dart';
 import '../../catalogue/presentation/product_detail_page.dart';
 import '../../catalogue/presentation/widgets/catalogue_product_card.dart';
 import '../../orders/presentation/order_history_page.dart';
+import '../../notifications/presentation/notification_center_sheet.dart';
 import '../../profile/presentation/edit_profile_page.dart';
 import '../../saved/presentation/saved_products_page.dart';
 import '../../seller/presentation/seller_dashboard_page.dart';
@@ -37,54 +39,162 @@ class _HomePageState extends State<HomePage> {
   final _categories = CategoryRepository();
   int _navIndex = 0;
 
-  static const _featured = [
+  static const _featuredFallback = [
     FeaturedCardData(
       eyebrow: 'Curated for you',
       title: 'Fresh picks',
       subtitle: 'Discover standout finds selected from across e-market.',
       icon: Icons.auto_awesome_rounded,
-      gradientStart: Color(0xFF101826),
-      gradientEnd: Color(0xFF243A59),
-      accent: Color(0xFF4C9BFF),
+      gradientStart: Color(0xFF18351F),
+      gradientEnd: Color(0xFF5F9F58),
+      accent: Color(0xFFBDEB72),
+      imageShape: FeaturedImageShape.roundedCard,
     ),
     FeaturedCardData(
       eyebrow: 'Tech edit',
       title: 'Electronics',
       subtitle: 'Smart devices, accessories and everyday technology.',
       icon: Icons.headphones_rounded,
-      gradientStart: Color(0xFF073B4C),
-      gradientEnd: Color(0xFF116B86),
-      accent: Color(0xFF27B8E6),
+      gradientStart: Color(0xFF24492F),
+      gradientEnd: Color(0xFF78A84F),
+      accent: Color(0xFFD6F78C),
+      imageShape: FeaturedImageShape.circle,
     ),
     FeaturedCardData(
       eyebrow: 'New season',
       title: 'Style drop',
       subtitle: 'Fresh fashion arrivals with a clean premium look.',
       icon: Icons.checkroom_rounded,
-      gradientStart: Color(0xFF2A1738),
-      gradientEnd: Color(0xFF6F3A88),
-      accent: Color(0xFFC16BF0),
+      gradientStart: Color(0xFF35542D),
+      gradientEnd: Color(0xFF9AC85E),
+      accent: Color(0xFFE4F7A5),
+      imageShape: FeaturedImageShape.softBlob,
     ),
     FeaturedCardData(
       eyebrow: 'Everyday upgrade',
       title: 'Home essentials',
       subtitle: 'Useful finds for a cleaner, calmer and smarter home.',
       icon: Icons.chair_alt_rounded,
-      gradientStart: Color(0xFF153229),
-      gradientEnd: Color(0xFF2D6B59),
-      accent: Color(0xFF55C59F),
+      gradientStart: Color(0xFF38542C),
+      gradientEnd: Color(0xFF80AD58),
+      accent: Color(0xFFC8EC87),
+      imageShape: FeaturedImageShape.roundedCard,
     ),
   ];
+
+  List<FeaturedCardData> _featuredCardsFromProducts(List<Product> products) {
+    final withImages = products
+        .where(
+          (product) => product.stock > 0 && product.imageRef.trim().isNotEmpty,
+        )
+        .toList();
+
+    if (withImages.isEmpty) {
+      return _featuredFallback;
+    }
+
+    Product? pick(List<String> keywords) {
+      for (final product in withImages) {
+        final searchable = '${product.categoryName} ${product.name}'
+            .toLowerCase();
+
+        for (final keyword in keywords) {
+          if (searchable.contains(keyword)) {
+            return product;
+          }
+        }
+      }
+
+      return null;
+    }
+
+    final fresh = withImages.first;
+
+    final electronics =
+        pick(const [
+          'electronic',
+          'tech',
+          'phone',
+          'headphone',
+          'computer',
+          'laptop',
+        ]) ??
+        fresh;
+
+    final fashion =
+        pick(const [
+          'fashion',
+          'style',
+          'cloth',
+          'jean',
+          'shoe',
+          'sneaker',
+          'jordan',
+        ]) ??
+        fresh;
+
+    final home =
+        pick(const ['home', 'house', 'kitchen', 'pan', 'cook', 'furniture']) ??
+        fresh;
+
+    return [
+      FeaturedCardData(
+        eyebrow: 'Curated for you',
+        title: 'Fresh picks',
+        subtitle: 'Fresh products selected from the newest finds on e-market.',
+        icon: Icons.auto_awesome_rounded,
+        gradientStart: const Color(0xFF18351F),
+        gradientEnd: const Color(0xFF5F9F58),
+        accent: const Color(0xFFBDEB72),
+        imageRef: fresh.imageRef,
+        imageShape: FeaturedImageShape.roundedCard,
+      ),
+      FeaturedCardData(
+        eyebrow: 'Tech edit',
+        title: 'Electronics',
+        subtitle: 'Smart devices and everyday technology with a fresh look.',
+        icon: Icons.headphones_rounded,
+        gradientStart: const Color(0xFF24492F),
+        gradientEnd: const Color(0xFF78A84F),
+        accent: const Color(0xFFD6F78C),
+        imageRef: electronics.imageRef,
+        imageShape: FeaturedImageShape.circle,
+      ),
+      FeaturedCardData(
+        eyebrow: 'New season',
+        title: 'Style drop',
+        subtitle: 'Fresh fashion arrivals presented with a clean premium feel.',
+        icon: Icons.checkroom_rounded,
+        gradientStart: const Color(0xFF35542D),
+        gradientEnd: const Color(0xFF9AC85E),
+        accent: const Color(0xFFE4F7A5),
+        imageRef: fashion.imageRef,
+        imageShape: FeaturedImageShape.softBlob,
+      ),
+      FeaturedCardData(
+        eyebrow: 'Everyday upgrade',
+        title: 'Home essentials',
+        subtitle: 'Useful home finds for a cleaner and smarter everyday space.',
+        icon: Icons.chair_alt_rounded,
+        gradientStart: const Color(0xFF38542C),
+        gradientEnd: const Color(0xFF80AD58),
+        accent: const Color(0xFFC8EC87),
+        imageRef: home.imageRef,
+        imageShape: FeaturedImageShape.roundedCard,
+      ),
+    ];
+  }
 
   Future<void> _openAuthentication() async {
     await Navigator.of(context).push(
       smoothRoute(
-        const AuthPage(
-          returnOnSuccess: true,
-          showVisitorOption: false,
-        ),
+        const AuthPage(returnOnSuccess: true, showVisitorOption: false),
       ),
     );
+  }
+
+  Future<void> _showNotifications() {
+    return showNotificationCenter(context, profile: widget.profile);
   }
 
   Future<void> _showProfile() async {
@@ -121,10 +231,7 @@ class _HomePageState extends State<HomePage> {
                   style: const TextStyle(color: AppColors.muted),
                 ),
                 const SizedBox(height: 18),
-                _ProfileLine(
-                  icon: Icons.phone_outlined,
-                  label: profile.phone,
-                ),
+                _ProfileLine(icon: Icons.phone_outlined, label: profile.phone),
                 const SizedBox(height: 14),
                 SizedBox(
                   width: double.infinity,
@@ -170,6 +277,47 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ],
+                const SizedBox(height: 18),
+                ValueListenableBuilder<ThemeMode>(
+                  valueListenable: ThemeController.mode,
+                  builder: (context, themeMode, _) {
+                    final dark = themeMode == ThemeMode.dark;
+
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withValues(alpha: 0.55),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.lineFor(context)),
+                      ),
+                      child: SwitchListTile.adaptive(
+                        value: dark,
+                        onChanged: ThemeController.setDark,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 3,
+                        ),
+                        secondary: Icon(
+                          dark
+                              ? Icons.dark_mode_rounded
+                              : Icons.light_mode_rounded,
+                          color: AppColors.accentStrong,
+                        ),
+                        title: const Text(
+                          'Dark mode',
+                          style: TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                        subtitle: Text(
+                          dark
+                              ? 'Deep forest appearance is active.'
+                              : 'Use a calmer dark appearance.',
+                        ),
+                      ),
+                    );
+                  },
+                ),
                 const SizedBox(height: 22),
                 SizedBox(
                   width: double.infinity,
@@ -194,9 +342,9 @@ class _HomePageState extends State<HomePage> {
     final profile = widget.profile;
     if (profile == null) return;
 
-    await Navigator.of(context).push(
-      smoothRoute(EditProfilePage(profile: profile)),
-    );
+    await Navigator.of(
+      context,
+    ).push(smoothRoute(EditProfilePage(profile: profile)));
   }
 
   Future<void> _openSaved() async {
@@ -217,42 +365,39 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    await Navigator.of(context).push(
-      smoothRoute(SavedProductsPage(profile: profile)),
-    );
+    await Navigator.of(
+      context,
+    ).push(smoothRoute(SavedProductsPage(profile: profile)));
   }
 
   Future<void> _openOrders() async {
     final profile = widget.profile;
     if (profile == null) return;
 
-    await Navigator.of(context).push(
-      smoothRoute(OrderHistoryPage(profile: profile)),
-    );
+    await Navigator.of(
+      context,
+    ).push(smoothRoute(OrderHistoryPage(profile: profile)));
   }
 
   Future<void> _openSellerDashboard() async {
     final profile = widget.profile;
     if (profile == null || profile.role != UserRole.seller) return;
 
-    await Navigator.of(context).push(
-      smoothRoute(SellerDashboardPage(profile: profile)),
-    );
+    await Navigator.of(
+      context,
+    ).push(smoothRoute(SellerDashboardPage(profile: profile)));
   }
 
   Future<void> _openCatalogue() {
-    return Navigator.of(context).push(
-      smoothRoute(CataloguePage(profile: widget.profile)),
-    );
+    return Navigator.of(
+      context,
+    ).push(smoothRoute(CataloguePage(profile: widget.profile)));
   }
 
   Future<void> _openCategory(MarketCategory category) {
     return Navigator.of(context).push(
       smoothRoute(
-        CataloguePage(
-          profile: widget.profile,
-          initialCategoryId: category.id,
-        ),
+        CataloguePage(profile: widget.profile, initialCategoryId: category.id),
       ),
     );
   }
@@ -288,9 +433,7 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    await Navigator.of(context).push(
-      smoothRoute(CartPage(profile: profile)),
-    );
+    await Navigator.of(context).push(smoothRoute(CartPage(profile: profile)));
   }
 
   void _onNavigationSelected(int index) {
@@ -331,15 +474,17 @@ class _HomePageState extends State<HomePage> {
               subtitle: subtitle,
               isVisitor: widget.isVisitor,
               roleLabel: profile?.role.label,
+              profile: profile,
               onProfile: _showProfile,
+              onNotifications: _showNotifications,
               onCart: _openCart,
             ),
             Expanded(
               child: Container(
                 width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceFor(context),
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(36),
                     topRight: Radius.circular(36),
                   ),
@@ -373,9 +518,18 @@ class _HomePageState extends State<HomePage> {
                         },
                       ),
                       const SizedBox(height: 24),
-                      FeaturedCardDeck(
-                        items: _featured,
-                        onTap: _openCatalogue,
+                      StreamBuilder<List<Product>>(
+                        stream: _products.watchActiveProducts(),
+                        builder: (context, snapshot) {
+                          final cards = _featuredCardsFromProducts(
+                            snapshot.data ?? const <Product>[],
+                          );
+
+                          return FeaturedCardDeck(
+                            items: cards,
+                            onTap: _openCatalogue,
+                          );
+                        },
                       ),
                       const SizedBox(height: 34),
                       _SectionHeading(
@@ -394,9 +548,7 @@ class _HomePageState extends State<HomePage> {
                               !snapshot.hasData) {
                             return const SizedBox(
                               height: 170,
-                              child: Center(
-                                child: CircularProgressIndicator(),
-                              ),
+                              child: Center(child: CircularProgressIndicator()),
                             );
                           }
 
@@ -409,8 +561,7 @@ class _HomePageState extends State<HomePage> {
                             );
                           }
 
-                          final products =
-                              snapshot.data ?? const <Product>[];
+                          final products = snapshot.data ?? const <Product>[];
 
                           if (products.isEmpty) {
                             return const _HomeCatalogueMessage(
@@ -429,11 +580,11 @@ class _HomePageState extends State<HomePage> {
                             itemCount: latest.length,
                             gridDelegate:
                                 const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 13,
-                              mainAxisSpacing: 14,
-                              childAspectRatio: 0.67,
-                            ),
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 13,
+                                  mainAxisSpacing: 14,
+                                  childAspectRatio: 0.67,
+                                ),
                             itemBuilder: (context, index) {
                               final product = latest[index];
                               return CatalogueProductCard(
@@ -477,9 +628,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
 }
-
 
 class _PremiumHomeHeader extends StatelessWidget {
   const _PremiumHomeHeader({
@@ -487,7 +636,9 @@ class _PremiumHomeHeader extends StatelessWidget {
     required this.subtitle,
     required this.isVisitor,
     required this.roleLabel,
+    required this.profile,
     required this.onProfile,
+    required this.onNotifications,
     required this.onCart,
   });
 
@@ -495,7 +646,9 @@ class _PremiumHomeHeader extends StatelessWidget {
   final String subtitle;
   final bool isVisitor;
   final String? roleLabel;
+  final UserProfile? profile;
   final VoidCallback onProfile;
+  final VoidCallback onNotifications;
   final VoidCallback onCart;
 
   @override
@@ -537,10 +690,7 @@ class _PremiumHomeHeader extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
             child: Row(
               children: [
-                _HeaderAvatar(
-                  isVisitor: isVisitor,
-                  onTap: onProfile,
-                ),
+                _HeaderAvatar(isVisitor: isVisitor, onTap: onProfile),
                 const SizedBox(width: 13),
                 Expanded(
                   child: Column(
@@ -613,15 +763,23 @@ class _PremiumHomeHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _HeaderActionButton(
-                  icon: Icons.notifications_none_rounded,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('You are all caught up for now.'),
-                      ),
+                ValueListenableBuilder<ThemeMode>(
+                  valueListenable: ThemeController.mode,
+                  builder: (context, themeMode, child) {
+                    final dark = themeMode == ThemeMode.dark;
+
+                    return _HeaderActionButton(
+                      icon: dark
+                          ? Icons.light_mode_rounded
+                          : Icons.dark_mode_rounded,
+                      onTap: ThemeController.toggle,
                     );
                   },
+                ),
+                const SizedBox(width: 7),
+                MarketNotificationBell(
+                  profile: profile,
+                  onTap: onNotifications,
                 ),
                 const SizedBox(width: 7),
                 _HeaderActionButton(
@@ -639,10 +797,7 @@ class _PremiumHomeHeader extends StatelessWidget {
 }
 
 class _HeaderAvatar extends StatelessWidget {
-  const _HeaderAvatar({
-    required this.isVisitor,
-    required this.onTap,
-  });
+  const _HeaderAvatar({required this.isVisitor, required this.onTap});
 
   final bool isVisitor;
   final VoidCallback onTap;
@@ -650,7 +805,7 @@ class _HeaderAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: AppColors.surfaceFor(context),
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -690,9 +845,7 @@ class _HeaderActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: accent
-          ? AppColors.accent
-          : Colors.white.withValues(alpha: 0.085),
+      color: accent ? AppColors.accent : Colors.white.withValues(alpha: 0.085),
       borderRadius: BorderRadius.circular(17),
       child: InkWell(
         onTap: onTap,
@@ -708,11 +861,7 @@ class _HeaderActionButton extends StatelessWidget {
                   : Colors.white.withValues(alpha: 0.08),
             ),
           ),
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: 21,
-          ),
+          child: Icon(icon, color: Colors.white, size: 21),
         ),
       ),
     );
@@ -768,10 +917,7 @@ class _SectionHeading extends StatelessWidget {
         TextButton.icon(
           onPressed: onAction,
           iconAlignment: IconAlignment.end,
-          icon: const Icon(
-            Icons.arrow_outward_rounded,
-            size: 16,
-          ),
+          icon: const Icon(Icons.arrow_outward_rounded, size: 16),
           label: Text(actionLabel),
         ),
       ],
@@ -780,16 +926,14 @@ class _SectionHeading extends StatelessWidget {
 }
 
 class _HomeSearchCard extends StatelessWidget {
-  const _HomeSearchCard({
-    required this.onTap,
-  });
+  const _HomeSearchCard({required this.onTap});
 
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.canvas,
+      color: AppColors.canvasFor(context),
       borderRadius: BorderRadius.circular(22),
       child: InkWell(
         onTap: onTap,
@@ -807,7 +951,7 @@ class _HomeSearchCard extends StatelessWidget {
                 width: 39,
                 height: 39,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surfaceFor(context),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(
@@ -831,10 +975,7 @@ class _HomeSearchCard extends StatelessWidget {
                     SizedBox(height: 2),
                     Text(
                       'Products, categories or sellers',
-                      style: TextStyle(
-                        color: AppColors.muted,
-                        fontSize: 10,
-                      ),
+                      style: TextStyle(color: AppColors.muted, fontSize: 10),
                     ),
                   ],
                 ),
@@ -916,12 +1057,10 @@ class _HomeCategoryStrip extends StatelessWidget {
         normalized.contains('phone')) {
       return Icons.devices_rounded;
     }
-    if (normalized.contains('beauty') ||
-        normalized.contains('care')) {
+    if (normalized.contains('beauty') || normalized.contains('care')) {
       return Icons.auto_awesome_rounded;
     }
-    if (normalized.contains('home') ||
-        normalized.contains('house')) {
+    if (normalized.contains('home') || normalized.contains('house')) {
       return Icons.chair_alt_rounded;
     }
     if (normalized.contains('food')) {
@@ -1033,7 +1172,7 @@ class _HomeCatalogueMessage extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: AppColors.canvas,
+        color: AppColors.canvasFor(context),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -1042,19 +1181,13 @@ class _HomeCatalogueMessage extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w900,
-            ),
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 5),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.muted,
-              height: 1.4,
-            ),
+            style: const TextStyle(color: AppColors.muted, height: 1.4),
           ),
         ],
       ),

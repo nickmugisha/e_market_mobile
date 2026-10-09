@@ -1,12 +1,10 @@
-﻿import 'dart:typed_data';
+import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 
 class NativeImagePicker {
-  NativeImagePicker({
-    ImagePicker? picker,
-  }) : _picker = picker ?? ImagePicker();
+  NativeImagePicker({ImagePicker? picker}) : _picker = picker ?? ImagePicker();
 
   final ImagePicker _picker;
 
@@ -14,9 +12,7 @@ class NativeImagePicker {
   static const int _maxDimension = 900;
 
   Future<Uint8List?> pickCompressedImage() async {
-    final pickedFile = await _picker.pickImage(
-      source: ImageSource.gallery,
-    );
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile == null) {
       return null;
@@ -36,35 +32,16 @@ class NativeImagePicker {
 
     final oriented = img.bakeOrientation(decoded);
 
-    final dimensions = <int>[
-      _maxDimension,
-      760,
-      640,
-      520,
-      420,
-    ];
+    final dimensions = <int>[_maxDimension, 760, 640, 520, 420];
 
-    final qualities = <int>[
-      84,
-      74,
-      64,
-      54,
-      44,
-      34,
-    ];
+    final qualities = <int>[84, 74, 64, 54, 44, 34];
 
     for (final maxSize in dimensions) {
-      final resized = _resizeToFit(
-        oriented,
-        maxSize,
-      );
+      final resized = _resizeToFit(oriented, maxSize);
 
       for (final quality in qualities) {
         final encoded = Uint8List.fromList(
-          img.encodeJpg(
-            resized,
-            quality: quality,
-          ),
+          img.encodeJpg(resized, quality: quality),
         );
 
         if (encoded.lengthInBytes <= _maxBytes) {
@@ -73,17 +50,11 @@ class NativeImagePicker {
       }
     }
 
-    throw StateError(
-      'The selected image could not be compressed enough.',
-    );
+    throw StateError('The selected image could not be compressed enough.');
   }
 
-  img.Image _resizeToFit(
-    img.Image source,
-    int maxSize,
-  ) {
-    if (source.width <= maxSize &&
-        source.height <= maxSize) {
+  img.Image _resizeToFit(img.Image source, int maxSize) {
+    if (source.width <= maxSize && source.height <= maxSize) {
       return source;
     }
 

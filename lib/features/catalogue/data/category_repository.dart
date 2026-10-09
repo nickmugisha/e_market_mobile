@@ -5,7 +5,7 @@ import '../domain/market_category.dart';
 
 class CategoryRepository {
   CategoryRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 
@@ -13,10 +13,9 @@ class CategoryRepository {
       _firestore.collection(FirestoreCollections.categories);
 
   Stream<List<MarketCategory>> watchActiveCategories() {
-    return _categories
-        .where('active', isEqualTo: true)
-        .snapshots()
-        .map((snapshot) {
+    return _categories.where('active', isEqualTo: true).snapshots().map((
+      snapshot,
+    ) {
       final categories = snapshot.docs
           .map((doc) => MarketCategory.fromMap(doc.id, doc.data()))
           .toList();

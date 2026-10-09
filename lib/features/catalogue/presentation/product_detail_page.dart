@@ -42,10 +42,10 @@ class ProductDetailPage extends StatelessWidget {
         final product = snapshot.data!;
 
         return Scaffold(
-          backgroundColor: AppColors.canvas,
+          backgroundColor: AppColors.canvasFor(context),
           appBar: AppBar(
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.white,
+            backgroundColor: AppColors.surfaceFor(context),
+            surfaceTintColor: AppColors.surfaceFor(context),
             title: const Text('Product details'),
             actions: [
               _SavedAction(
@@ -62,7 +62,7 @@ class ProductDetailPage extends StatelessWidget {
               Container(
                 height: 340,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surfaceFor(context),
                   borderRadius: BorderRadius.circular(30),
                   border: Border.all(color: AppColors.line),
                 ),
@@ -120,10 +120,7 @@ class ProductDetailPage extends StatelessWidget {
               const SizedBox(height: 24),
               const Text(
                 'About this product',
-                style: TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w900,
-                ),
+                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 8),
               Text(
@@ -160,10 +157,10 @@ class ProductDetailPage extends StatelessWidget {
                 product.stock <= 0
                     ? 'Currently sold out'
                     : profile == null
-                        ? 'Sign in to buy'
-                        : profile!.role == UserRole.client
-                            ? 'Add to cart'
-                            : 'Client account required',
+                    ? 'Sign in to buy'
+                    : profile!.role == UserRole.client
+                    ? 'Add to cart'
+                    : 'Client account required',
               ),
             ),
           ),
@@ -197,10 +194,7 @@ class ProductDetailPage extends StatelessWidget {
     }
 
     try {
-      await _cart.addProduct(
-        clientUid: profile!.uid,
-        productId: product.id,
-      );
+      await _cart.addProduct(clientUid: profile!.uid, productId: product.id);
 
       if (!context.mounted) return;
 
@@ -251,15 +245,13 @@ class ProductDetailPage extends StatelessWidget {
     } on FormatException {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('The seller WhatsApp number is invalid.'),
-        ),
+        const SnackBar(content: Text('The seller WhatsApp number is invalid.')),
       );
     } on ExternalContactFailure catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     }
   }
 
@@ -271,10 +263,7 @@ class ProductDetailPage extends StatelessWidget {
 }
 
 class _SellerCard extends StatelessWidget {
-  const _SellerCard({
-    required this.product,
-    required this.onWhatsApp,
-  });
+  const _SellerCard({required this.product, required this.onWhatsApp});
 
   final Product product;
   final VoidCallback? onWhatsApp;
@@ -286,7 +275,7 @@ class _SellerCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceFor(context),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.line),
       ),
@@ -352,7 +341,6 @@ class _SellerCard extends StatelessWidget {
   }
 }
 
-
 class _SavedAction extends StatelessWidget {
   const _SavedAction({
     required this.profile,
@@ -413,9 +401,7 @@ class _SavedAction extends StatelessWidget {
             }
           },
           icon: Icon(
-            saved
-                ? Icons.favorite_rounded
-                : Icons.favorite_border_rounded,
+            saved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
             color: saved ? AppColors.accent : null,
           ),
         );
@@ -452,10 +438,7 @@ class _StockBadge extends StatelessWidget {
 }
 
 class _InfoChip extends StatelessWidget {
-  const _InfoChip({
-    required this.icon,
-    required this.label,
-  });
+  const _InfoChip({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -465,7 +448,7 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceFor(context),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppColors.line),
       ),
@@ -476,10 +459,7 @@ class _InfoChip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-            ),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
           ),
         ],
       ),
@@ -493,10 +473,10 @@ class _UnavailableProductPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: AppColors.canvasFor(context),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
+        backgroundColor: AppColors.surfaceFor(context),
+        surfaceTintColor: AppColors.surfaceFor(context),
       ),
       body: const Center(
         child: Padding(
@@ -512,10 +492,7 @@ class _UnavailableProductPage extends StatelessWidget {
               SizedBox(height: 14),
               Text(
                 'Product unavailable',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                ),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
               ),
               SizedBox(height: 6),
               Text(

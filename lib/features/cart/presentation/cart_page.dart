@@ -13,10 +13,7 @@ import '../domain/cart_item.dart';
 import '../domain/cart_policy.dart';
 
 class CartPage extends StatefulWidget {
-  const CartPage({
-    super.key,
-    required this.profile,
-  });
+  const CartPage({super.key, required this.profile});
 
   final UserProfile profile;
 
@@ -32,10 +29,7 @@ class _CartPageState extends State<CartPage> {
   MarketCurrency _displayCurrency = MarketCurrency.bif;
   final Set<String> _busyItems = {};
 
-  Future<void> _changeQuantity(
-    CartItem item,
-    int nextQuantity,
-  ) async {
+  Future<void> _changeQuantity(CartItem item, int nextQuantity) async {
     if (_busyItems.contains(item.productId)) return;
 
     setState(() => _busyItems.add(item.productId));
@@ -115,11 +109,11 @@ class _CartPageState extends State<CartPage> {
   Widget build(BuildContext context) {
     if (widget.profile.role != UserRole.client) {
       return Scaffold(
-        backgroundColor: AppColors.canvas,
+        backgroundColor: AppColors.canvasFor(context),
         appBar: AppBar(
           title: const Text('Cart'),
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.white,
+          backgroundColor: AppColors.surfaceFor(context),
+          surfaceTintColor: AppColors.surfaceFor(context),
         ),
         body: const Center(
           child: Padding(
@@ -127,10 +121,7 @@ class _CartPageState extends State<CartPage> {
             child: Text(
               'The shopping cart is available to client accounts.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.muted,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: AppColors.muted, fontSize: 16),
             ),
           ),
         ),
@@ -138,11 +129,11 @@ class _CartPageState extends State<CartPage> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: AppColors.canvasFor(context),
       appBar: AppBar(
         title: const Text('Your cart'),
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
+        backgroundColor: AppColors.surfaceFor(context),
+        surfaceTintColor: AppColors.surfaceFor(context),
       ),
       body: StreamBuilder<List<CartItem>>(
         stream: _cart.watchItems(widget.profile.uid),
@@ -172,8 +163,7 @@ class _CartPageState extends State<CartPage> {
           return StreamBuilder<List<Product>>(
             stream: _products.watchActiveProducts(),
             builder: (context, productSnapshot) {
-              final activeProducts =
-                  productSnapshot.data ?? const <Product>[];
+              final activeProducts = productSnapshot.data ?? const <Product>[];
               final productsById = {
                 for (final product in activeProducts) product.id: product,
               };
@@ -258,9 +248,7 @@ class _CartPageState extends State<CartPage> {
                       const Expanded(
                         child: Text(
                           'Display currency',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w900),
                         ),
                       ),
                       DropdownButton<MarketCurrency>(
@@ -298,12 +286,10 @@ class _CartPageState extends State<CartPage> {
                         busy: busy,
                         onDecrease: () =>
                             _changeQuantity(item, item.quantity - 1),
-                        onIncrease: currentProduct != null &&
+                        onIncrease:
+                            currentProduct != null &&
                                 item.quantity < currentProduct.stock
-                            ? () => _changeQuantity(
-                                  item,
-                                  item.quantity + 1,
-                                )
+                            ? () => _changeQuantity(item, item.quantity + 1)
                             : null,
                         onRemove: () => _remove(item),
                       ),
@@ -322,9 +308,7 @@ class _CartPageState extends State<CartPage> {
                         children: [
                           const Text(
                             'Cart needs attention',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                            ),
+                            style: TextStyle(fontWeight: FontWeight.w900),
                           ),
                           const SizedBox(height: 6),
                           ...issues.map(
@@ -347,7 +331,7 @@ class _CartPageState extends State<CartPage> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.surfaceFor(context),
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: AppColors.line),
                     ),
@@ -397,10 +381,7 @@ class _CartPageState extends State<CartPage> {
                   const Text(
                     'Prices are converted using fixed BIF-based demo rates in LOT 6.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 11,
-                    ),
+                    style: TextStyle(color: AppColors.muted, fontSize: 11),
                   ),
                 ],
               );
@@ -446,7 +427,7 @@ class _CartItemCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceFor(context),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: issue == null ? AppColors.line : AppColors.accent,
@@ -528,9 +509,7 @@ class _CartItemCard extends StatelessWidget {
                       child: busy
                           ? const SizedBox.square(
                               dimension: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : Text(
                               '${item.quantity}',
@@ -578,19 +557,13 @@ class _CartMessage extends StatelessWidget {
             const SizedBox(height: 14),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-              ),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 6),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.muted,
-                height: 1.4,
-              ),
+              style: const TextStyle(color: AppColors.muted, height: 1.4),
             ),
           ],
         ),

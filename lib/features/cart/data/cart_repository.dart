@@ -15,14 +15,12 @@ class CartFailure implements Exception {
 
 class CartRepository {
   CartRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 
   DocumentReference<Map<String, dynamic>> _cart(String clientUid) {
-    return _firestore
-        .collection(FirestoreCollections.carts)
-        .doc(clientUid);
+    return _firestore.collection(FirestoreCollections.carts).doc(clientUid);
   }
 
   CollectionReference<Map<String, dynamic>> _items(String clientUid) {
@@ -30,9 +28,7 @@ class CartRepository {
   }
 
   DocumentReference<Map<String, dynamic>> _product(String productId) {
-    return _firestore
-        .collection(FirestoreCollections.products)
-        .doc(productId);
+    return _firestore.collection(FirestoreCollections.products).doc(productId);
   }
 
   Stream<List<CartItem>> watchItems(String clientUid) {
@@ -42,12 +38,10 @@ class CartRepository {
           .toList();
 
       items.sort((a, b) {
-        final aDate = a.updatedAt ??
-            a.addedAt ??
-            DateTime.fromMillisecondsSinceEpoch(0);
-        final bDate = b.updatedAt ??
-            b.addedAt ??
-            DateTime.fromMillisecondsSinceEpoch(0);
+        final aDate =
+            a.updatedAt ?? a.addedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bDate =
+            b.updatedAt ?? b.addedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
         return bDate.compareTo(aDate);
       });
 
@@ -56,8 +50,9 @@ class CartRepository {
   }
 
   Future<List<CartItem>> fetchItemsFromServer(String clientUid) async {
-    final snapshot =
-        await _items(clientUid).get(const GetOptions(source: Source.server));
+    final snapshot = await _items(
+      clientUid,
+    ).get(const GetOptions(source: Source.server));
 
     final items = snapshot.docs
         .map((doc) => CartItem.fromMap(doc.id, doc.data()))
@@ -168,10 +163,7 @@ class CartRepository {
     required int quantity,
   }) async {
     if (quantity <= 0) {
-      await removeItem(
-        clientUid: clientUid,
-        productId: productId,
-      );
+      await removeItem(clientUid: clientUid, productId: productId);
       return;
     }
 
@@ -206,7 +198,9 @@ class CartRepository {
       }
 
       if (cartData['sellerId'] != product.sellerId) {
-        throw const CartFailure('The cart seller no longer matches this product.');
+        throw const CartFailure(
+          'The cart seller no longer matches this product.',
+        );
       }
 
       final itemSnapshot = await transaction.get(itemRef);
@@ -214,9 +208,7 @@ class CartRepository {
         throw const CartFailure('This item is no longer in your cart.');
       }
 
-      transaction.update(cartRef, {
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      transaction.update(cartRef, {'updatedAt': FieldValue.serverTimestamp()});
 
       transaction.update(itemRef, {
         'sellerId': product.sellerId,

@@ -17,22 +17,30 @@ class CatalogueProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final inStock = product.stock > 0;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
+    final surface = AppColors.surfaceFor(context);
+    final line = AppColors.lineFor(context);
+    final text = AppColors.textFor(context);
+    final muted = AppColors.mutedFor(context);
 
     return Material(
-      color: Colors.white,
+      color: surface,
       borderRadius: BorderRadius.circular(26),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(26),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: surface,
             borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: AppColors.line),
+            border: Border.all(color: line),
             boxShadow: [
               BoxShadow(
-                color: AppColors.ink.withValues(alpha: 0.045),
-                blurRadius: 20,
+                color: dark
+                    ? Colors.black.withValues(alpha: 0.22)
+                    : AppColors.ink.withValues(alpha: 0.045),
+                blurRadius: dark ? 16 : 20,
                 offset: const Offset(0, 9),
               ),
             ],
@@ -57,10 +65,7 @@ class CatalogueProductCard extends StatelessWidget {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               stops: [0.40, 1],
-                              colors: [
-                                Colors.transparent,
-                                Color(0x660D0F14),
-                              ],
+                              colors: [Colors.transparent, Color(0x660D0F14)],
                             ),
                           ),
                         ),
@@ -68,9 +73,7 @@ class CatalogueProductCard extends StatelessWidget {
                       Positioned(
                         top: 10,
                         left: 10,
-                        child: _StockPill(
-                          stock: product.stock,
-                        ),
+                        child: _StockPill(stock: product.stock),
                       ),
                       Positioned(
                         right: 10,
@@ -79,21 +82,27 @@ class CatalogueProductCard extends StatelessWidget {
                           width: 34,
                           height: 34,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.92),
+                            color: dark
+                                ? AppColors.darkElevated.withValues(alpha: 0.94)
+                                : Colors.white.withValues(alpha: 0.92),
                             shape: BoxShape.circle,
+                            border: dark
+                                ? Border.all(color: AppColors.darkLine)
+                                : null,
                             boxShadow: [
                               BoxShadow(
-                                color:
-                                    AppColors.ink.withValues(alpha: 0.07),
+                                color: Colors.black.withValues(
+                                  alpha: dark ? 0.22 : 0.07,
+                                ),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.arrow_outward_rounded,
                             size: 17,
-                            color: AppColors.ink,
+                            color: dark ? AppColors.accent : AppColors.ink,
                           ),
                         ),
                       ),
@@ -110,10 +119,7 @@ class CatalogueProductCard extends StatelessWidget {
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
                             shadows: [
-                              Shadow(
-                                color: Colors.black38,
-                                blurRadius: 5,
-                              ),
+                              Shadow(color: Colors.black54, blurRadius: 5),
                             ],
                           ),
                         ),
@@ -133,8 +139,10 @@ class CatalogueProductCard extends StatelessWidget {
                               product.categoryName.toUpperCase(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: AppColors.accent,
+                              style: TextStyle(
+                                color: dark
+                                    ? AppColors.leafGlow
+                                    : AppColors.accentStrong,
                                 fontSize: 8.5,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 0.7,
@@ -158,7 +166,8 @@ class CatalogueProductCard extends StatelessWidget {
                         product.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
+                          color: text,
                           fontSize: 15,
                           height: 1.12,
                           fontWeight: FontWeight.w900,
@@ -174,7 +183,8 @@ class CatalogueProductCard extends StatelessWidget {
                               '${product.currency.code} ${_price(product.price)}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
+                                color: text,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: -0.25,
@@ -184,9 +194,7 @@ class CatalogueProductCard extends StatelessWidget {
                           Text(
                             inStock ? 'AVAILABLE' : 'SOLD OUT',
                             style: TextStyle(
-                              color: inStock
-                                  ? AppColors.muted
-                                  : AppColors.danger,
+                              color: inStock ? muted : AppColors.danger,
                               fontSize: 7.5,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.55,
@@ -213,31 +221,34 @@ class CatalogueProductCard extends StatelessWidget {
 }
 
 class _StockPill extends StatelessWidget {
-  const _StockPill({
-    required this.stock,
-  });
+  const _StockPill({required this.stock});
 
   final int stock;
 
   @override
   Widget build(BuildContext context) {
     final inStock = stock > 0;
+    final dark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 9,
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
         color: inStock
-            ? Colors.white.withValues(alpha: 0.94)
-            : AppColors.ink.withValues(alpha: 0.92),
+            ? dark
+                  ? AppColors.darkElevated.withValues(alpha: 0.94)
+                  : Colors.white.withValues(alpha: 0.94)
+            : AppColors.ink.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(999),
+        border: dark && inStock ? Border.all(color: AppColors.darkLine) : null,
       ),
       child: Text(
         inStock ? '$stock left' : 'Sold out',
         style: TextStyle(
-          color: inStock ? AppColors.ink : Colors.white,
+          color: inStock
+              ? dark
+                    ? AppColors.darkText
+                    : AppColors.ink
+              : Colors.white,
           fontSize: 8.5,
           fontWeight: FontWeight.w900,
         ),

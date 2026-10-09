@@ -4,7 +4,7 @@ import '../../../core/firestore/firestore_collections.dart';
 
 class SavedProductRepository {
   SavedProductRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 
@@ -16,35 +16,28 @@ class SavedProductRepository {
   }
 
   Stream<Set<String>> watchSavedIds(String clientUid) {
-    return _items(clientUid).snapshots().map(
-          (snapshot) => snapshot.docs.map((doc) => doc.id).toSet(),
-        );
+    return _items(
+      clientUid,
+    ).snapshots().map((snapshot) => snapshot.docs.map((doc) => doc.id).toSet());
   }
 
   Stream<bool> watchSaved({
     required String clientUid,
     required String productId,
   }) {
-    return _items(clientUid)
-        .doc(productId)
-        .snapshots()
-        .map((snapshot) => snapshot.exists);
+    return _items(
+      clientUid,
+    ).doc(productId).snapshots().map((snapshot) => snapshot.exists);
   }
 
-  Future<void> save({
-    required String clientUid,
-    required String productId,
-  }) {
+  Future<void> save({required String clientUid, required String productId}) {
     return _items(clientUid).doc(productId).set({
       'productId': productId,
       'addedAt': FieldValue.serverTimestamp(),
     });
   }
 
-  Future<void> remove({
-    required String clientUid,
-    required String productId,
-  }) {
+  Future<void> remove({required String clientUid, required String productId}) {
     return _items(clientUid).doc(productId).delete();
   }
 
@@ -54,15 +47,9 @@ class SavedProductRepository {
     required bool currentlySaved,
   }) {
     if (currentlySaved) {
-      return remove(
-        clientUid: clientUid,
-        productId: productId,
-      );
+      return remove(clientUid: clientUid, productId: productId);
     }
 
-    return save(
-      clientUid: clientUid,
-      productId: productId,
-    );
+    return save(clientUid: clientUid, productId: productId);
   }
 }

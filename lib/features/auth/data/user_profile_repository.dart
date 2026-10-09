@@ -5,10 +5,9 @@ import '../domain/user_profile.dart';
 
 class UserProfileRepository {
   UserProfileRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
-
 
   Future<void> updateProfile({
     required UserProfile profile,

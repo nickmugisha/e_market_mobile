@@ -20,19 +20,12 @@ abstract final class WhatsAppLink {
     return digits.length >= 8 && digits.length <= 15;
   }
 
-  static Uri build({
-    required String phone,
-    required String message,
-  }) {
+  static Uri build({required String phone, required String message}) {
     final digits = normalizePhone(phone);
     if (digits.length < 8 || digits.length > 15) {
       throw const FormatException('Invalid WhatsApp phone number.');
     }
 
-    return Uri.https(
-      'wa.me',
-      '/$digits',
-      {'text': message.trim()},
-    );
+    return Uri.https('wa.me', '/$digits', {'text': message.trim()});
   }
 }

@@ -1,11 +1,7 @@
 import '../../catalogue/domain/product.dart';
 import 'cart_item.dart';
 
-enum CartIssueType {
-  unavailable,
-  insufficientStock,
-  sellerMismatch,
-}
+enum CartIssueType { unavailable, insufficientStock, sellerMismatch }
 
 class CartIssue {
   const CartIssue({

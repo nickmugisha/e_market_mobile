@@ -8,10 +8,7 @@ import '../domain/order_models.dart';
 import 'order_detail_page.dart';
 
 class OrderHistoryPage extends StatelessWidget {
-  OrderHistoryPage({
-    super.key,
-    required this.profile,
-  });
+  OrderHistoryPage({super.key, required this.profile});
 
   final UserProfile profile;
   final OrderRepository _orders = OrderRepository();
@@ -24,11 +21,11 @@ class OrderHistoryPage extends StatelessWidget {
         : _orders.watchClientOrders(profile.uid);
 
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: AppColors.canvasFor(context),
       appBar: AppBar(
         title: Text(sellerMode ? 'Seller orders' : 'My orders'),
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
+        backgroundColor: AppColors.surfaceFor(context),
+        surfaceTintColor: AppColors.surfaceFor(context),
       ),
       body: StreamBuilder<List<MarketOrder>>(
         stream: stream,
@@ -100,7 +97,7 @@ class _OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: AppColors.surfaceFor(context),
       borderRadius: BorderRadius.circular(24),
       child: InkWell(
         onTap: onTap,
@@ -235,19 +232,13 @@ class _OrdersMessage extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-              ),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 6),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.muted,
-                height: 1.4,
-              ),
+              style: const TextStyle(color: AppColors.muted, height: 1.4),
             ),
           ],
         ),

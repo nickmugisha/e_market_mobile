@@ -201,11 +201,11 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         final sellerMode = widget.profile.role == UserRole.seller;
 
         return Scaffold(
-          backgroundColor: AppColors.canvas,
+          backgroundColor: AppColors.canvasFor(context),
           appBar: AppBar(
             title: Text('Order #${_shortId(order.id)}'),
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.white,
+            backgroundColor: AppColors.surfaceFor(context),
+            surfaceTintColor: AppColors.surfaceFor(context),
           ),
           body: StreamBuilder<List<OrderItem>>(
             stream: _orders.watchOrderItems(order.id),
@@ -389,7 +389,7 @@ class _InfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceFor(context),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.line),
       ),
@@ -458,7 +458,7 @@ class _OrderItemCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceFor(context),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: AppColors.line),
       ),
@@ -570,7 +570,7 @@ class _SellerActions extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceFor(context),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.line),
       ),
@@ -616,10 +616,10 @@ class _OrderUnavailable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: AppColors.canvasFor(context),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
+        backgroundColor: AppColors.surfaceFor(context),
+        surfaceTintColor: AppColors.surfaceFor(context),
       ),
       body: const Center(
         child: Padding(

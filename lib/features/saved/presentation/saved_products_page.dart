@@ -10,10 +10,7 @@ import '../../catalogue/presentation/widgets/catalogue_product_card.dart';
 import '../data/saved_product_repository.dart';
 
 class SavedProductsPage extends StatelessWidget {
-  SavedProductsPage({
-    super.key,
-    required this.profile,
-  });
+  SavedProductsPage({super.key, required this.profile});
 
   final UserProfile profile;
   final SavedProductRepository _saved = SavedProductRepository();
@@ -23,11 +20,11 @@ class SavedProductsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     if (profile.role != UserRole.client) {
       return Scaffold(
-        backgroundColor: AppColors.canvas,
+        backgroundColor: AppColors.canvasFor(context),
         appBar: AppBar(
           title: const Text('Saved'),
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.white,
+          backgroundColor: AppColors.surfaceFor(context),
+          surfaceTintColor: AppColors.surfaceFor(context),
         ),
         body: const _SavedMessage(
           icon: Icons.lock_outline_rounded,
@@ -38,11 +35,11 @@ class SavedProductsPage extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: AppColors.canvasFor(context),
       appBar: AppBar(
         title: const Text('Saved products'),
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
+        backgroundColor: AppColors.surfaceFor(context),
+        surfaceTintColor: AppColors.surfaceFor(context),
       ),
       body: StreamBuilder<Set<String>>(
         stream: _saved.watchSavedIds(profile.uid),
@@ -74,8 +71,7 @@ class SavedProductsPage extends StatelessWidget {
           return StreamBuilder<List<Product>>(
             stream: _products.watchActiveProducts(),
             builder: (context, productSnapshot) {
-              if (productSnapshot.connectionState ==
-                      ConnectionState.waiting &&
+              if (productSnapshot.connectionState == ConnectionState.waiting &&
                   !productSnapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
@@ -104,8 +100,7 @@ class SavedProductsPage extends StatelessWidget {
               return GridView.builder(
                 padding: const EdgeInsets.fromLTRB(18, 18, 18, 90),
                 itemCount: products.length,
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
@@ -161,19 +156,13 @@ class _SavedMessage extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-              ),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 6),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.muted,
-                height: 1.4,
-              ),
+              style: const TextStyle(color: AppColors.muted, height: 1.4),
             ),
           ],
         ),

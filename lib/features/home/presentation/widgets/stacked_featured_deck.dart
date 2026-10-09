@@ -37,20 +37,18 @@ class _FeaturedCardDeckState extends State<FeaturedCardDeck>
   void initState() {
     super.initState();
 
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 280),
-    )..addListener(() {
-        final eased = Curves.easeOutCubic.transform(_controller.value);
-        setState(() {
-          _dragOffset = Offset.lerp(
-                _animationStart,
-                _animationEnd,
-                eased,
-              ) ??
-              Offset.zero;
+    _controller =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 280),
+        )..addListener(() {
+          final eased = Curves.easeOutCubic.transform(_controller.value);
+          setState(() {
+            _dragOffset =
+                Offset.lerp(_animationStart, _animationEnd, eased) ??
+                Offset.zero;
+          });
         });
-      });
   }
 
   @override
@@ -84,10 +82,7 @@ class _FeaturedCardDeckState extends State<FeaturedCardDeck>
     if (_animating || widget.items.length < 2) return;
 
     setState(() {
-      _dragOffset += Offset(
-        details.delta.dx,
-        details.delta.dy * 0.18,
-      );
+      _dragOffset += Offset(details.delta.dx, details.delta.dy * 0.18);
     });
   }
 
@@ -112,10 +107,7 @@ class _FeaturedCardDeckState extends State<FeaturedCardDeck>
     final direction = velocityX.abs() > 80 ? velocityX.sign : fallbackDirection;
 
     _animateTo(
-      Offset(
-        direction * (width + 180),
-        _dragOffset.dy + 34,
-      ),
+      Offset(direction * (width + 180), _dragOffset.dy + 34),
       advance: true,
       duration: const Duration(milliseconds: 300),
     );
@@ -281,27 +273,39 @@ class _BehindCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseScale = depth == 1 ? 0.955 : 0.91;
-    final nextScale = depth == 1 ? 1.0 : 0.955;
+    final baseScale = depth == 1 ? 0.95 : 0.90;
+    final nextScale = depth == 1 ? 0.985 : 0.95;
     final scale = _lerp(baseScale, nextScale, progress);
 
-    final baseY = depth == 1 ? 15.0 : 29.0;
-    final nextY = depth == 1 ? 0.0 : 15.0;
+    final baseX = depth == 1 ? 28.0 : 50.0;
+    final nextX = depth == 1 ? 12.0 : 28.0;
+    final translateX = _lerp(baseX, nextX, progress);
+
+    final baseY = depth == 1 ? 9.0 : 19.0;
+    final nextY = depth == 1 ? 2.0 : 9.0;
     final translateY = _lerp(baseY, nextY, progress);
 
-    final baseOpacity = depth == 1 ? 0.88 : 0.66;
-    final nextOpacity = depth == 1 ? 1.0 : 0.88;
+    final baseRotation = depth == 1 ? 0.055 : 0.095;
+    final nextRotation = depth == 1 ? 0.03 : 0.06;
+    final rotation = _lerp(baseRotation, nextRotation, progress);
+
+    final baseOpacity = depth == 1 ? 0.90 : 0.68;
+    final nextOpacity = depth == 1 ? 0.98 : 0.82;
     final opacity = _lerp(baseOpacity, nextOpacity, progress);
 
     return IgnorePointer(
       child: Transform.translate(
-        offset: Offset(0, translateY),
-        child: Transform.scale(
-          scale: scale,
-          alignment: Alignment.topCenter,
-          child: Opacity(
-            opacity: opacity,
-            child: FeaturedCard(data: data),
+        offset: Offset(translateX, translateY),
+        child: Transform.rotate(
+          angle: rotation,
+          alignment: Alignment.topRight,
+          child: Transform.scale(
+            scale: scale,
+            alignment: Alignment.topRight,
+            child: Opacity(
+              opacity: opacity,
+              child: FeaturedCard(data: data),
+            ),
           ),
         ),
       ),
@@ -314,10 +318,7 @@ class _BehindCard extends StatelessWidget {
 }
 
 class _DeckDots extends StatelessWidget {
-  const _DeckDots({
-    required this.count,
-    required this.currentIndex,
-  });
+  const _DeckDots({required this.count, required this.currentIndex});
 
   final int count;
   final int currentIndex;
@@ -336,9 +337,7 @@ class _DeckDots extends StatelessWidget {
           curve: Curves.easeOutCubic,
           width: selected ? 20 : 6,
           height: 6,
-          margin: EdgeInsets.only(
-            right: index == visibleCount - 1 ? 0 : 5,
-          ),
+          margin: EdgeInsets.only(right: index == visibleCount - 1 ? 0 : 5),
           decoration: BoxDecoration(
             color: selected ? AppColors.accent : AppColors.line,
             borderRadius: BorderRadius.circular(999),

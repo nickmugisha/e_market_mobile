@@ -48,10 +48,7 @@ class ProductImage extends StatelessWidget {
 
     if (borderRadius == null) return child;
 
-    return ClipRRect(
-      borderRadius: borderRadius!,
-      child: child,
-    );
+    return ClipRRect(borderRadius: borderRadius!, child: child);
   }
 
   Widget _placeholder() {
@@ -60,11 +57,7 @@ class ProductImage extends StatelessWidget {
       height: height,
       color: AppColors.canvas,
       alignment: Alignment.center,
-      child: const Icon(
-        Icons.image_outlined,
-        color: AppColors.muted,
-        size: 34,
-      ),
+      child: const Icon(Icons.image_outlined, color: AppColors.muted, size: 34),
     );
   }
 }

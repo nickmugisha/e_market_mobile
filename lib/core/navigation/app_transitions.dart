@@ -6,12 +6,7 @@ PageRoute<T> smoothRoute<T>(Widget page) {
     transitionDuration: const Duration(milliseconds: 520),
     reverseTransitionDuration: const Duration(milliseconds: 420),
     pageBuilder: (context, animation, secondaryAnimation) => page,
-    transitionsBuilder: (
-      context,
-      animation,
-      secondaryAnimation,
-      child,
-    ) {
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
       return FadeThroughTransition(
         animation: animation,
         secondaryAnimation: secondaryAnimation,
